@@ -2,6 +2,8 @@
 
 This is the official implementation of ***LISA(large Language Instructed Segmentation Assistant)***. 
 
+<p align="center"> <img src="imgs/fig_teaser4_crop.png" width="100%"> </p>
+
 ## News
 - [x] [2023.8.2] Paper is released and github repo is created.
 
@@ -17,7 +19,6 @@ This is the official implementation of ***LISA(large Language Instructed Segment
 4. multi-turn conversation. 
 
 **LISA** also demonstrates robust zero-shot capability when trained exclusively on reasoning-free datasets. In addition, fine-tuning the model with merely 239 reasoning segmentation image-instruction pairs results in further performance enhancement.
-<p align="center"> <img src="imgs/fig_teaser4_crop.png" width="100%"> </p>
 
 ## Abstract
 In this work, we propose a new segmentation task --- ***reasoning segmentation***. The task is designed to output a segmentation mask given a complex and implicit query text. We establish a benchmark comprising over one thousand image-instruction pairs, incorporating intricate reasoning and world knowledge for evaluation purposes. Finally, we present LISA: Large-language Instructed Segmentation Assistant, which inherits the language generation capabilities of the multi-modal Large Language Model (LLM) while also possessing the ability to produce segmentation masks.
