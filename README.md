@@ -19,7 +19,7 @@ For more details, please refer to:
 ### Experimental results
 <p align="center"> <img src="imgs/fig_teaser4_crop.png" width="100%"> </p>
 
-<p align="center"> <img src="imgs/Table1.png" width="100%"> </p>
+<p align="center"> <img src="imgs/Table1.png" width="80%"> </p>
 
 
 ## Citation 
