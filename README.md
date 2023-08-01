@@ -1,6 +1,6 @@
 # LISA: Reasoning Segmentation Via Large Language Model
 
-This is the official implementation of **LISA** (large **L**anguage **I**nstructed **S**egmentation **A**ssistant). 
+This is the official implementation of ***LISA(large Language Instructed Segmentation Assistant)***. 
 
 ## News
 - [x] [2023.8.2] Paper is released and github repo is created.
