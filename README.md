@@ -17,10 +17,13 @@ For more details, please refer to:
 <p align="center"> <img src="imgs/fig_overview_v6_crop.png" width="100%"> </p>
 
 ### Experimental results
+LISA can handle cases involving: 1) complex reasoning; 2) world knowledge; 3) explanatory answers; 4) multi-turn conversation.It demonstrates robust zero-shot capability when trained exclusively on reasoning-free datasets.
 <p align="center"> <img src="imgs/fig_teaser4_crop.png" width="100%"> </p>
 
 <p align="center"> <img src="imgs/Table1.png" width="80%"> </p>
 
+### Others
+Code and models will be released in the future.
 
 ## Citation 
 If you find this project useful in your research, please consider citing:
