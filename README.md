@@ -1,6 +1,6 @@
 # LISA: Reasoning Segmentation Via Large Language Model
 
-This is the official implementation of ***LISA*** (large ***L***anguage ***I***nstructed ***S***egmentation ***A***ssistant). 
+This is the official implementation of **LISA** (large **L**anguage **I**nstructed **S**egmentation **A**ssistant). 
 
 ## News
 - [x] [2023.8.2] Paper is released and github repo is created.
@@ -10,13 +10,13 @@ This is the official implementation of ***LISA*** (large ***L***anguage ***I***n
 - [ ] ReasonSeg Dataset Release
 - [ ] Codes and models Release
 
-***LISA*** unlocks the new segmentation capabilities of multi-modal LLM, and can handle cases involving: 
+**LISA** unlocks the new segmentation capabilities of multi-modal LLM, and can handle cases involving: 
 1. complex reasoning; 
 2. world knowledge; 
 3. explanatory answers; 
 4. multi-turn conversation. 
 
-***LISA*** also demonstrates robust zero-shot capability when trained exclusively on reasoning-free datasets. In addition, fine-tuning the model with merely 239 reasoning segmentation image-instruction pairs results in further performance enhancement.
+**LISA** also demonstrates robust zero-shot capability when trained exclusively on reasoning-free datasets. In addition, fine-tuning the model with merely 239 reasoning segmentation image-instruction pairs results in further performance enhancement.
 <p align="center"> <img src="imgs/fig_teaser4_crop.png" width="100%"> </p>
 
 ## Abstract
