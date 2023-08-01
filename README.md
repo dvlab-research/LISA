@@ -11,7 +11,7 @@ For more details, please refer to:
 [Yukang Chen](https://scholar.google.com/citations?user=6p0ygKUAAAAJ&hl=en),
 [Yanwei Li](https://scholar.google.com/citations?user=I-UCPPcAAAAJ&hl=zh-CN),
 [Yuhui Yuan](https://scholar.google.com/citations?user=PzyvzksAAAAJ&hl=en),
-[Shu Liu](https://scholar.google.com.hk/citations?user=BUEDUFkAAAAJ&hl=zh-CN)
+[Shu Liu](https://scholar.google.com.hk/citations?user=BUEDUFkAAAAJ&hl=zh-CN),
 [Jiaya Jia](https://scholar.google.com/citations?user=XPAkzTEAAAAJ&hl=en)<br />
 
 <p align="center"> <img src="imgs/fig_overview_v6_crop.png" width="100%"> </p>
