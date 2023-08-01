@@ -10,7 +10,7 @@ This is the official implementation of ***LISA(large Language Instructed Segment
 - [ ] ReasonSeg Dataset Release
 - [ ] Codes and models Release
 
-**LISA** unlocks the new segmentation capabilities of multi-modal LLM, and can handle cases involving: 
+**LISA** unlocks the new segmentation capabilities of multi-modal LLMs, and can handle cases involving: 
 1. complex reasoning; 
 2. world knowledge; 
 3. explanatory answers; 
