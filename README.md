@@ -1,7 +1,19 @@
 # LISA: Reasoning Segmentation Via Large Language Model
 
-This is the official implementation of ***LISA (Large-language Instructed Segmentation Assistant)***. 
+This is the official implementation of ***LISA (large Language Instructed Segmentation Assistant)***. 
 
+## News
+- [x] [2023.8.2] Paper is released and github repo is created.
+
+## TODO 
+- [ ] Huggingface Demo
+- [ ] ReasonSeg Dataset Release
+- [ ] Codes and models Release
+
+LISA can handle cases involving: 1) complex reasoning; 2) world knowledge; 3) explanatory answers; 4) multi-turn conversation.It demonstrates robust zero-shot capability when trained exclusively on reasoning-free datasets.
+<p align="center"> <img src="imgs/fig_teaser4_crop.png" width="100%"> </p>
+
+## Abstract
 In this work, we propose a new segmentation task --- ***reasoning segmentation***. The task is designed to output a segmentation mask given a complex and implicit query text. We establish a benchmark comprising over one thousand image-instruction pairs, incorporating intricate reasoning and world knowledge for evaluation purposes. Finally, we present LISA: Large-language Instructed Segmentation Assistant, which inherits the language generation capabilities of the multi-modal Large Language Model (LLM) while also possessing the ability to produce segmentation masks.
 For more details, please refer to:
 
@@ -16,14 +28,8 @@ For more details, please refer to:
 
 <p align="center"> <img src="imgs/fig_overview_v6_crop.png" width="100%"> </p>
 
-### Experimental results
-LISA can handle cases involving: 1) complex reasoning; 2) world knowledge; 3) explanatory answers; 4) multi-turn conversation.It demonstrates robust zero-shot capability when trained exclusively on reasoning-free datasets.
-<p align="center"> <img src="imgs/fig_teaser4_crop.png" width="100%"> </p>
-
+## Experimental results
 <p align="center"> <img src="imgs/Table1.png" width="80%"> </p>
-
-### Others
-Code and models will be released in the future.
 
 ## Citation 
 If you find this project useful in your research, please consider citing:
@@ -37,7 +43,6 @@ If you find this project useful in your research, please consider citing:
 }
 
 ```
-
 
 ## Acknowledgement
 -  This work is built upon the [LLaMA](https://github.com/facebookresearch/llama), [SAM](https://github.com/facebookresearch/segment-anything), and [LLaVA](https://github.com/haotian-liu/LLaVA). 
