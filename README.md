@@ -5,10 +5,10 @@ This is the official implementation of ***LISA(large Language Instructed Segment
 <p align="center"> <img src="imgs/fig_teaser4_crop.png" width="100%"> </p>
 
 ## News
-- [x] [2023.8.2] Paper is released and github repo is created.
+- [x] [2023.8.2] Paper is released and GitHub repo is created.
 
 ## TODO 
-- [ ] Huggingface Demo
+- [ ] Hugging Face Demo
 - [ ] ReasonSeg Dataset Release
 - [ ] Codes and models Release
 
