@@ -12,14 +12,6 @@ This is the official implementation of ***LISA(large Language Instructed Segment
 - [ ] ReasonSeg Dataset Release
 - [ ] Codes and models Release
 
-**LISA** unlocks the new segmentation capabilities of multi-modal LLMs, and can handle cases involving: 
-1. complex reasoning; 
-2. world knowledge; 
-3. explanatory answers; 
-4. multi-turn conversation. 
-
-**LISA** also demonstrates robust zero-shot capability when trained exclusively on reasoning-free datasets. In addition, fine-tuning the model with merely 239 reasoning segmentation image-instruction pairs results in further performance enhancement.
-
 ## Abstract
 In this work, we propose a new segmentation task --- ***reasoning segmentation***. The task is designed to output a segmentation mask given a complex and implicit query text. We establish a benchmark comprising over one thousand image-instruction pairs, incorporating intricate reasoning and world knowledge for evaluation purposes. Finally, we present LISA: Large-language Instructed Segmentation Assistant, which inherits the language generation capabilities of the multi-modal Large Language Model (LLM) while also possessing the ability to produce segmentation masks.
 For more details, please refer to:
@@ -34,6 +26,15 @@ For more details, please refer to:
 [Jiaya Jia](https://scholar.google.com/citations?user=XPAkzTEAAAAJ&hl=en)<br />
 
 <p align="center"> <img src="imgs/fig_overview_v6_crop.png" width="100%"> </p>
+
+## Highlights
+**LISA** unlocks the new segmentation capabilities of multi-modal LLMs, and can handle cases involving: 
+1. complex reasoning; 
+2. world knowledge; 
+3. explanatory answers; 
+4. multi-turn conversation. 
+
+**LISA** also demonstrates robust zero-shot capability when trained exclusively on reasoning-free datasets. In addition, fine-tuning the model with merely 239 reasoning segmentation image-instruction pairs results in further performance enhancement.
 
 ## Experimental results
 <p align="center"> <img src="imgs/Table1.png" width="80%"> </p>
