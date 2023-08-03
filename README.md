@@ -9,7 +9,7 @@
 <p align="center"> <img src="imgs/teaser.png" width="100%"> </p>
 
 ## News
-- [x] [2023.8.3] Inference code and the [LISA-13B-llama2-v0](https://huggingface.co/xinlai/LISA-13B-llama2-v0) model is released. Welcome to check out!
+- [x] [2023.8.3] Inference code and the [LISA-13B-llama2-v0](https://huggingface.co/xinlai/LISA-13B-llama2-v0) model are released. Welcome to check out!
 - [x] [2023.8.2] Paper is released and GitHub repo is created.
 
 ## TODO 
