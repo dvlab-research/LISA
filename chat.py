@@ -17,19 +17,22 @@ def parse_args(args):
   parser = argparse.ArgumentParser(description='LISA chat')
   parser.add_argument('--version', default='xinlai/LISA-13B-llama2-v0')
   parser.add_argument('--vis_save_path', default='./vis_output', type=str)
-  parser.add_argument('--precision', default='bf16', type=str, choices=['fp32', 'bf16'], help="precision for inference")
+  parser.add_argument('--precision', default='bf16', type=str, choices=['fp32', 'bf16', 'fp16'], help="precision for inference")
   parser.add_argument('--image-size', default=1024, type=int, help='image size')
   parser.add_argument('--model-max-length', default=512, type=int)
   parser.add_argument('--lora-r', default=-1, type=int)
   parser.add_argument('--vision-tower', default='openai/clip-vit-large-patch14', type=str)
   parser.add_argument('--local-rank', default=0, type=int, help='node rank')
+  parser.add_argument('--load_in_8bit', action='store_true', default=False)
+  parser.add_argument('--load_in_4bit', action='store_true', default=False)
   return parser.parse_args(args)
 
 
 def preprocess(x, 
-  pixel_mean=torch.Tensor([123.675, 116.28, 103.53]).view(-1, 1, 1), 
-  pixel_std=torch.Tensor([58.395, 57.12, 57.375]).view(-1, 1, 1),
-  img_size=1024) -> torch.Tensor:
+    pixel_mean=torch.Tensor([123.675, 116.28, 103.53]).view(-1, 1, 1), 
+    pixel_std=torch.Tensor([58.395, 57.12, 57.375]).view(-1, 1, 1),
+    img_size=1024
+  ) -> torch.Tensor:
     """Normalize pixel values and pad to a square input."""
     # Normalize colors
     x = (x - pixel_mean) / pixel_std
@@ -65,6 +68,8 @@ def main(args):
     args.version, 
     args.lora_r,
     args.precision,
+    load_in_8bit=args.load_in_8bit,
+    load_in_4bit=args.load_in_4bit,
   )
 
   weight = {}
@@ -76,6 +81,14 @@ def main(args):
 
   if args.precision == 'bf16':
     model = model.bfloat16().cuda()
+  elif args.precision == 'fp16':
+    import deepspeed
+    model_engine = deepspeed.init_inference(model=model, 
+      dtype=torch.half, 
+      replace_with_kernel_inject=True,
+      replace_method="auto",
+    )
+    model = model_engine.module
   else:
     model = model.float().cuda()
 
@@ -113,12 +126,16 @@ def main(args):
     original_size_list = [image.shape[:2]]
     if args.precision == 'bf16':
       images_clip = clip_image_processor.preprocess(image, return_tensors='pt')['pixel_values'][0].unsqueeze(0).cuda().bfloat16()
+    elif args.precision == 'fp16':
+      images_clip = clip_image_processor.preprocess(image, return_tensors='pt')['pixel_values'][0].unsqueeze(0).cuda().half()
     else:
       images_clip = clip_image_processor.preprocess(image, return_tensors='pt')['pixel_values'][0].unsqueeze(0).cuda().float()
     images = transform.apply_image(image)
     resize_list = [images.shape[:2]]
     if args.precision == 'bf16':
       images = preprocess(torch.from_numpy(images).permute(2,0,1).contiguous()).unsqueeze(0).cuda().bfloat16()
+    elif args.precision == 'fp16':
+      images = preprocess(torch.from_numpy(images).permute(2,0,1).contiguous()).unsqueeze(0).cuda().half()
     else:
       images = preprocess(torch.from_numpy(images).permute(2,0,1).contiguous()).unsqueeze(0).cuda().float()
 

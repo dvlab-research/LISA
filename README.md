@@ -53,9 +53,14 @@ To chat with [LISA-13B-llama2-v0](https://huggingface.co/xinlai/LISA-13B-llama2-
 ```
 CUDA_VISIBLE_DEVICES=0 python3 chat.py --version='xinlai/LISA-13B-llama2-v0'
 ```
-To use `bfloat16` data type for inference:
+To use `bf16` or `fp16` data type for inference:
 ```
 CUDA_VISIBLE_DEVICES=0 python3 chat.py --version='xinlai/LISA-13B-llama2-v0' --precision='bf16'
+```
+To use `8bit` or `4bit` data type for inference:
+```
+CUDA_VISIBLE_DEVICES=0 python3 chat.py --version='xinlai/LISA-13B-llama2-v0' --precision='fp16' --load_in_8bit
+CUDA_VISIBLE_DEVICES=0 python3 chat.py --version='xinlai/LISA-13B-llama2-v0' --precision='fp16' --load_in_4bit
 ```
 
 After that, input the text prompt and then the image path. For example，

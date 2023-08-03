@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import transformers
 
-from transformers import LlamaForCausalLM, CLIPVisionModel
+from transformers import LlamaForCausalLM, CLIPVisionModel, BitsAndBytesConfig
 from peft import (
     LoraConfig,
     get_peft_model,
@@ -49,6 +49,8 @@ class LISA(nn.Module):
     llm_version,
     lora_r,
     precision,
+    load_in_4bit=False,
+    load_in_8bit=False,
     lora_target_modules=['q_proj', 'v_proj'],
     lora_alpha=16,
     lora_dropout=0.05,
@@ -69,6 +71,20 @@ class LISA(nn.Module):
     num_new_tokens = tokenizer.add_tokens([DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN], special_tokens=True)
     if precision == "bf16":
       self.lm = LlavaLlamaForCausalLM.from_pretrained(llm_version, torch_dtype=torch.bfloat16, cache_dir=None, low_cpu_mem_usage=True)
+    elif precision == "fp16":
+      if load_in_4bit:
+        self.lm = LlavaLlamaForCausalLM.from_pretrained(llm_version, load_in_4bit=True, cache_dir=None, low_cpu_mem_usage=True, device_map='auto', 
+          quantization_config=BitsAndBytesConfig(
+              load_in_4bit=True,
+              bnb_4bit_compute_dtype=torch.float16,
+              bnb_4bit_use_double_quant=True,
+              bnb_4bit_quant_type='nf4'
+          )
+        )
+      elif load_in_8bit:
+        self.lm = LlavaLlamaForCausalLM.from_pretrained(llm_version, load_in_8bit=True, cache_dir=None, low_cpu_mem_usage=True, device_map='auto')
+      else:
+        self.lm = LlavaLlamaForCausalLM.from_pretrained(llm_version, torch_dtype=torch.half, cache_dir=None, low_cpu_mem_usage=True)
     else:
       self.lm = LlavaLlamaForCausalLM.from_pretrained(llm_version, torch_dtype=torch.float32, cache_dir=None, low_cpu_mem_usage=True)
 
@@ -85,6 +101,8 @@ class LISA(nn.Module):
     if vision_tower.device.type == 'meta':
         if precision == 'bf16':
           vision_tower = CLIPVisionModel.from_pretrained(vision_tower.config._name_or_path, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True).cuda(local_rank)
+        elif precision == 'fp16':
+          vision_tower = CLIPVisionModel.from_pretrained(vision_tower.config._name_or_path, torch_dtype=torch.half, low_cpu_mem_usage=True).cuda(local_rank)
         else:
           vision_tower = CLIPVisionModel.from_pretrained(vision_tower.config._name_or_path, torch_dtype=torch.float32, low_cpu_mem_usage=True).cuda(local_rank)
         self.lm.get_model().vision_tower[0] = vision_tower
@@ -92,6 +110,8 @@ class LISA(nn.Module):
 
         if precision == "bf16":
           vision_tower.to(device='cuda', dtype=torch.bfloat16)
+        elif precision == "fp16":
+          vision_tower.to(device='cuda', dtype=torch.half)
         else:
           vision_tower.to(device='cuda', dtype=torch.float32)
         
@@ -135,58 +155,59 @@ class LISA(nn.Module):
 
   def evaluate(self, images_clip, images, input_ids, resize_list, original_size_list, max_new_tokens=32, tokenizer=None):
     
-    outputs = self.lm.generate(images=images_clip, input_ids=input_ids, max_new_tokens=max_new_tokens, num_beams=1, output_hidden_states=True, return_dict_in_generate=True)
-    output_hidden_states = outputs.hidden_states[-1]
-    output_ids = outputs.sequences
-    
-    seg_token_mask = (output_ids[:, 1:] == self.seg_token_idx)
+    with torch.no_grad():
+      outputs = self.lm.generate(images=images_clip, input_ids=input_ids, max_new_tokens=max_new_tokens, num_beams=1, output_hidden_states=True, return_dict_in_generate=True)
+      output_hidden_states = outputs.hidden_states[-1]
+      output_ids = outputs.sequences
 
-    last_embedding = None
-    last_output_logit = None
-    hidden_states = []
+      seg_token_mask = (output_ids[:, 1:] == self.seg_token_idx)
 
-    assert len(self.text_hidden_fcs) == 1
-    hidden_states.append(self.text_hidden_fcs[0](output_hidden_states))
+      last_embedding = None
+      last_output_logit = None
+      hidden_states = []
 
-    last_hidden_state = torch.stack(hidden_states, dim=-1).sum(dim=-1)
-    pred_embeddings = last_hidden_state[seg_token_mask]
-    
-    seg_token_counts = seg_token_mask.int().sum(-1) #[bs, ]
-    seg_token_offset = seg_token_counts.cumsum(-1)
-    seg_token_offset = torch.cat([torch.zeros(1).long().cuda(), seg_token_offset], dim=0)
+      assert len(self.text_hidden_fcs) == 1
+      hidden_states.append(self.text_hidden_fcs[0](output_hidden_states))
 
-    pred_embeddings_ = []
-    for i in range(len(seg_token_offset)-1):
-      start_i, end_i = seg_token_offset[i], seg_token_offset[i+1]
-      pred_embeddings_.append(pred_embeddings[start_i: end_i])
-    pred_embeddings = pred_embeddings_
-
-    image_embeddings = self.get_visual_embs(images)
-
-    multimask_output = False
-    pred_masks = []
-    for i in range(len(pred_embeddings)):
-      sparse_embeddings, dense_embeddings = self.visual_model.prompt_encoder(
-          points=None,
-          boxes=None,
-          masks=None,
-          text_embeds=pred_embeddings[i].unsqueeze(1),
-      )
-
-      sparse_embeddings = sparse_embeddings.to(pred_embeddings[i].dtype)
-      low_res_masks, iou_predictions = self.visual_model.mask_decoder(
-          image_embeddings=image_embeddings[i].unsqueeze(0),
-          image_pe=self.visual_model.prompt_encoder.get_dense_pe(),
-          sparse_prompt_embeddings=sparse_embeddings,
-          dense_prompt_embeddings=dense_embeddings,
-          multimask_output=multimask_output,
-      )
+      last_hidden_state = torch.stack(hidden_states, dim=-1).sum(dim=-1)
+      pred_embeddings = last_hidden_state[seg_token_mask]
       
-      pred_mask = self.visual_model.postprocess_masks(
-          low_res_masks,
-          input_size=resize_list[i],
-          original_size=original_size_list[i],
-      )
-      pred_masks.append(pred_mask[:, 0])
+      seg_token_counts = seg_token_mask.int().sum(-1) #[bs, ]
+      seg_token_offset = seg_token_counts.cumsum(-1)
+      seg_token_offset = torch.cat([torch.zeros(1).long().cuda(), seg_token_offset], dim=0)
+
+      pred_embeddings_ = []
+      for i in range(len(seg_token_offset)-1):
+        start_i, end_i = seg_token_offset[i], seg_token_offset[i+1]
+        pred_embeddings_.append(pred_embeddings[start_i: end_i])
+      pred_embeddings = pred_embeddings_
+
+      image_embeddings = self.get_visual_embs(images)
+
+      multimask_output = False
+      pred_masks = []
+      for i in range(len(pred_embeddings)):
+        sparse_embeddings, dense_embeddings = self.visual_model.prompt_encoder(
+            points=None,
+            boxes=None,
+            masks=None,
+            text_embeds=pred_embeddings[i].unsqueeze(1),
+        )
+
+        sparse_embeddings = sparse_embeddings.to(pred_embeddings[i].dtype)
+        low_res_masks, iou_predictions = self.visual_model.mask_decoder(
+            image_embeddings=image_embeddings[i].unsqueeze(0),
+            image_pe=self.visual_model.prompt_encoder.get_dense_pe(),
+            sparse_prompt_embeddings=sparse_embeddings,
+            dense_prompt_embeddings=dense_embeddings,
+            multimask_output=multimask_output,
+        )
+
+        pred_mask = self.visual_model.postprocess_masks(
+            low_res_masks,
+            input_size=resize_list[i],
+            original_size=original_size_list[i],
+        )
+        pred_masks.append(pred_mask[:, 0])
       
     return output_ids, pred_masks

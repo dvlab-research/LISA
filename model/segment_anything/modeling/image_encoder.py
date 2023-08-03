@@ -114,8 +114,13 @@ class ImageEncoderViT(nn.Module):
         for blk in self.blocks:
             x = blk(x)
 
-        x = self.neck(x.permute(0, 3, 1, 2))
-
+        dtype = x.dtype
+        if dtype == torch.float16: # prevent overflow
+            with torch.autocast(device_type='cuda', dtype=torch.float32):
+                x = self.neck(x.permute(0, 3, 1, 2))
+            x = x.to(dtype)
+        else:
+            x = self.neck(x.permute(0, 3, 1, 2))
         return x
 
 

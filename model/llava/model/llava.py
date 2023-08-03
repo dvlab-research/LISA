@@ -63,6 +63,8 @@ class LlavaLlamaModel(LlamaModel):
         vision_tower.requires_grad_(False)
         if precision == 'bf16':
             vision_tower = vision_tower.to(torch.bfloat16)
+        elif precision == 'fp16':
+            vision_tower = vision_tower.to(torch.half)
         else:
             vision_tower = vision_tower.to(torch.float32)
 
