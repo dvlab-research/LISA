@@ -1,8 +1,8 @@
 # LISA: Reasoning Segmentation via Large Language Model
 
-<center> **LISA**: Large **L**anguage **I**nstructed **S**egmentation **A**ssistant </center>
+<div align='center' ><b>LISA</b>: Large <b>L</b>anguage <b>I</b>nstructed <b>S</b>egmentation <b>A</b>ssistant</div>
 
-<center>| [LISA Paper](https://arxiv.org/abs/2308.00692) | [LISA Model](https://huggingface.co/xinlai/LISA-13B-llama2-v0) | Demo (Comming Soon) |</center>
+<div align='center' >| <a href=https://arxiv.org/abs/2308.00692>[LISA Paper]</a> | <a href=https://huggingface.co/xinlai/LISA-13B-llama2-v0>[LISA Model]</a> | <a>Demo (Comming Soon)</a> |</div>
 
 <!-- This is the official implementation of **LISA(large Language Instructed Segmentation Assistant)**.  -->
 
