@@ -2,7 +2,8 @@
 
 <font size=10><div align='center'><b>LISA</b>: Large <b>L</b>anguage <b>I</b>nstructed <b>S</b>egmentation <b>A</b>ssistant</div></font>
 
-<font size=10><div align='center' > <a href=https://arxiv.org/abs/2308.00692>Paper</a> | <a href=https://huggingface.co/xinlai/LISA-13B-llama2-v0>Model</a> | <a href="#Inference">Inference</a> | <a>Demo (Comming Soon)</a> </div></font>
+<div align='center' > <a href=https://arxiv.org/abs/2308.00692>Paper</a> | <a href=https://huggingface.co/xinlai/LISA-13B-llama2-v0>Model</a> | <a href="#Inference">Inference</a> | <a>Demo (Comming Soon)</a> </div>
+
 
 <p align="center"> <img src="imgs/fig_overview.png" width="100%"> </p>
 
