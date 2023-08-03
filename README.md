@@ -5,7 +5,7 @@
 <font size=10><div align='center' > <a href=https://arxiv.org/abs/2308.00692>Paper</a> | <a href=https://huggingface.co/xinlai/LISA-13B-llama2-v0>Models</a> | [Inference](#inference) | Dataset (Coming Soon) | <a>Demo (Comming Soon)</a> </div></font>
 
 
-<p align="center"> <img src="imgs/fig_overview.png" width="100%"> </p>
+<p align="center"> <img src="imgs/fig_overview.pdf" width="100%"> </p>
 
 <p align="center"> <img src="imgs/teaser.png" width="100%"> </p>
 
