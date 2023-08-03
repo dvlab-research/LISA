@@ -2,15 +2,16 @@
 
 This is the official implementation of ***LISA(large Language Instructed Segmentation Assistant)***. 
 
-<p align="center"> <img src="imgs/fig_teaser4_crop.png" width="100%"> </p>
+<p align="center"> <img src="imgs/teaser.png" width="100%"> </p>
 
 ## News
+- [x] [2023.8.3] Inference code and the [LISA-13B-llama2-v0](https://huggingface.co/xinlai/LISA-13B-llama2-v0) model is released. Welcome to check out!
 - [x] [2023.8.2] Paper is released and GitHub repo is created.
 
 ## TODO 
 - [ ] Hugging Face Demo
 - [ ] ReasonSeg Dataset Release
-- [ ] Codes and models Release
+- [ ] Training Code Release
 
 ## Abstract
 In this work, we propose a new segmentation task --- ***reasoning segmentation***. The task is designed to output a segmentation mask given a complex and implicit query text. We establish a benchmark comprising over one thousand image-instruction pairs, incorporating intricate reasoning and world knowledge for evaluation purposes. Finally, we present LISA: Large-language Instructed Segmentation Assistant, which inherits the language generation capabilities of the multi-modal Large Language Model (LLM) while also possessing the ability to produce segmentation masks.
@@ -25,7 +26,7 @@ For more details, please refer to:
 [Shu Liu](https://scholar.google.com.hk/citations?user=BUEDUFkAAAAJ&hl=zh-CN),
 [Jiaya Jia](https://scholar.google.com/citations?user=XPAkzTEAAAAJ&hl=en)<br />
 
-<p align="center"> <img src="imgs/fig_overview_v6_crop.png" width="100%"> </p>
+<p align="center"> <img src="imgs/fig_overview.png" width="100%"> </p>
 
 ## Highlights
 **LISA** unlocks the new segmentation capabilities of multi-modal LLMs, and can handle cases involving: 
@@ -38,6 +39,33 @@ For more details, please refer to:
 
 ## Experimental results
 <p align="center"> <img src="imgs/Table1.png" width="80%"> </p>
+
+## Installation
+```
+pip install -r requirements.txt
+```
+
+## Inference
+To chat with [LISA-13B-llama2-v0](https://huggingface.co/xinlai/LISA-13B-llama2-v0): (Note that the model currently does not support explanatory answers.)
+```
+CUDA_VISIBLE_DEVICES=0 python3 chat.py --version='xinlai/LISA-13B-llama2-v0'
+```
+To use `bfloat16` data type for inference:
+```
+CUDA_VISIBLE_DEVICES=0 python3 chat.py --version='xinlai/LISA-13B-llama2-v0' --precision='bf16'
+```
+
+After that, input the text prompt and then the image path. For example，
+```
+- Please input your prompt: Where can the driver see the car speed in this image? Please output segmentation mask.
+- Please input the image path: imgs/example1.jpg
+
+- Please input your prompt: Can you segment the food that tastes spicy and hot?
+- Please input the image path: imgs/example2.jpg
+```
+The results should be like:
+<p align="center"> <img src="imgs/example1.jpg" width="22%"> <img src="vis_output/example1_masked_img_0.jpg" width="22%"> <img src="imgs/example2.jpg" width="25%"> <img src="vis_output/example2_masked_img_0.jpg" width="25%"> </p>
+
 
 ## Citation 
 If you find this project useful in your research, please consider citing:
