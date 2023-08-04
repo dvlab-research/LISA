@@ -2,7 +2,7 @@
 
 <font size=10><div align='center'><b>LISA</b>: Large <b>L</b>anguage <b>I</b>nstructed <b>S</b>egmentation <b>A</b>ssistant</div></font>
 
-<font size=10><div align='center' > <a href=https://arxiv.org/abs/2308.00692>Paper</a> | <a href=https://huggingface.co/xinlai/LISA-13B-llama2-v0>Models</a> | [Inference](#inference) | Dataset (Coming Soon) | <a>Demo (Comming Soon)</a> </div></font>
+<font size=10><div align='center' > <a href=https://arxiv.org/abs/2308.00692>Paper</a> | <a href=https://huggingface.co/xinlai>Models</a> | [Inference](#inference) | Dataset (Coming Soon) | <a>Demo (Comming Soon)</a> </div></font>
 
 
 <p align="center"> <img src="imgs/fig_overview.png" width="100%"> </p>
@@ -49,7 +49,7 @@ pip install -r requirements.txt
 ```
 
 ## Inference 
-To chat with [LISA-13B-llama2-v0](https://huggingface.co/xinlai/LISA-13B-llama2-v0): (Note that the model currently does not support explanatory answers.)
+To chat with [LISA-13B-llama2-v0](https://huggingface.co/xinlai/LISA-13B-llama2-v0) or [LISA-13B-llama2-v0-explainatory](https://huggingface.co/xinlai/LISA-13B-llama2-v0-explainatory): (Note that LISA-13B-llama2-v0 currently does not support explanatory answers.)
 ```
 CUDA_VISIBLE_DEVICES=0 python3 chat.py --version='xinlai/LISA-13B-llama2-v0'
 ```
