@@ -91,7 +91,7 @@ Important keys contained in JSON files:
 - "shapes": target polygons.
 ```
 
-The elements of the "shapes" exhibit two categories, namely **"target"** and **"ignore"**. The former category is indispensable for evaluation, while the latter category denotes the ambiguous region and hence disregarded during the evaluation process. 
+The elements of the "shapes" exhibit two categories, namely **"target"** and **"ignore"**. The former category is indispensable for evaluation, while the latter category denotes the ambiguous region and hence disregarded during the evaluation process. We provide a script that demonstrates how to process the annotations.
 
 Besides, we leveraged GPT-3.5 for rephrasing instructions, so images in the training set may have **more than one instructions (but fewer than six)** in the "text" field. Users can randomly select one instruction as the text query to obtain a better model.
 
