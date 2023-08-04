@@ -93,7 +93,7 @@ Important keys contained in JSON files:
 
 The elements of the "shapes" exhibit two categories, namely **"target"** and **"ignore"**. The former category is indispensable for evaluation, while the latter category denotes the ambiguous region and hence disregarded during the evaluation process. 
 
-We provide a script that demonstrates how to process the annotations.
+We provide a <a href="https://github.com/dvlab-research/LISA/blob/main/utils/data_proc_demo.py">**script**</a> that demonstrates how to process the annotations:
 ```
 python3 utils/data_proc_demo.py
 ```
