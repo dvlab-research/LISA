@@ -5,9 +5,9 @@
 <font size=10><div align='center' > <a href=https://arxiv.org/pdf/2308.00692.pdf>**Paper**</a> | <a href="https://huggingface.co/xinlai">**Models**</a> | [**Inference**](#inference) | [**Dataset**](#dataset) | <a href="http://103.170.5.190:7860/">**Online Demo**</a></div></font>
 
 
-<p align="center"> <img src="imgs/fig_overview.png" width="100%"> </p>
+<p align="center"> <img src="imgs/fig_overview.jpg" width="100%"> </p>
 
-<p align="center"> <img src="imgs/teaser.png" width="100%"> </p>
+<p align="center"> <img src="imgs/teaser.jpg" width="100%"> </p>
 
 ## News
 - [x] [2023.8.4] [Online Demo](http://103.170.5.190:7860/) is released! 
@@ -41,7 +41,7 @@ For more details, please refer to the [paper](https://arxiv.org/abs/2308.00692).
 **LISA** also demonstrates robust zero-shot capability when trained exclusively on reasoning-free datasets. In addition, fine-tuning the model with merely 239 reasoning segmentation image-instruction pairs results in further performance enhancement.
 
 ## Experimental results
-<p align="center"> <img src="imgs/Table1.png" width="80%"> </p>
+<p align="center"> <img src="imgs/table1.jpg" width="80%"> </p>
 
 ## Installation
 ```
