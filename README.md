@@ -47,7 +47,7 @@ For more details, please refer to the [paper](https://arxiv.org/abs/2308.00692).
 ```
 pip install -r requirements.txt
 ```
-
+ 
 ## Inference 
 To chat with [LISA-13B-llama2-v0](https://huggingface.co/xinlai/LISA-13B-llama2-v0) or [LISA-13B-llama2-v0-explainatory](https://huggingface.co/xinlai/LISA-13B-llama2-v0-explainatory): (Note that LISA-13B-llama2-v0 currently does not support explanatory answers.)
 ```
