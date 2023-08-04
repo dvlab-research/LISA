@@ -98,7 +98,7 @@ We provide a <a href="https://github.com/dvlab-research/LISA/blob/main/utils/dat
 python3 utils/data_proc_demo.py
 ```
 
-Besides, we leveraged GPT-3.5 for rephrasing instructions, so images in the training set may have **more than one instructions (but fewer than six)** in the "text" field. Users can randomly select one instruction as the text query to obtain a better model.
+Besides, we leveraged GPT-3.5 for rephrasing instructions, so images in the training set may have **more than one instructions (but fewer than six)** in the "text" field. During training, users may randomly select one as the text query to obtain a better model.
 
 
 ## Citation 
