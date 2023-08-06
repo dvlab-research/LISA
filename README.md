@@ -20,10 +20,10 @@
   <td><img src="vis_output/trump.jpg"></td>
 </tr>
 <tr>
-  <td width=25% style="text-align:center;color:gray;">"Who was <u>the president of the US</u> in this image? Please output segmentation mask and explain the reason."</td>
-  <td width=25% style="text-align:center;">"Sure, the segmentation result is [SEG]. <u>The President of the United States in the image is President Obama.</u>”</td>
-  <td width=25% style="text-align:center;color:gray">"Who was <u>Tthe president of the US</u> in this image? Please output segmentation mask and explain why."</td>
-  <td width=25% style="text-align:center;">"Sure, [SEG]. In the image, <u>the President of the United States is President Trump.</u>"</td>
+  <td width=25% style="text-align:center;color:gray;">"Who was <ins>the president of the US</ins> in this image? Please output segmentation mask and explain the reason."</td>
+  <td width=25% style="text-align:center;">"Sure, the segmentation result is [SEG]. The President of the United States in the image is <ins>President Obama.</ins>”</td>
+  <td width=25% style="text-align:center;color:gray">"Who was <ins>Tthe president of the US</ins> in this image? Please output segmentation mask and explain why."</td>
+  <td width=25% style="text-align:center;">"Sure, [SEG]. In the image, the President of the United States is <ins>President Trump.</ins>"</td>
 </tr>
 
 <tr>
@@ -33,9 +33,9 @@
   <td><img src="vis_output/camera_lens.jpg"></td>
 </tr>
 <tr>
-  <td width=25% style="text-align:center;color:gray;">"What can <u>make the woman stand higher</u>? Please output segmentation mask and explain why."</td>
-  <td width=25% style="text-align:center;">"Sure, [SEG]. The woman is <u>standing higher by using a ladder</u>..."</td>
-  <td width=25% style="text-align:center;color:gray">"Can you segment <u>the camera lens that is more suitable for photographing nearby objects</u> in this image?"</td>
+  <td width=25% style="text-align:center;color:gray;">"What can <ins>make the woman stand higher</ins>? Please output segmentation mask and explain why."</td>
+  <td width=25% style="text-align:center;">"Sure, [SEG]. The woman is <ins>standing higher by using a ladder</ins>..."</td>
+  <td width=25% style="text-align:center;color:gray">"Can you segment <ins>the camera lens that is more suitable for photographing nearby objects</ins> in this image?"</td>
   <td width=25% style="text-align:center;">"Sure, [SEG]."</td>
 </tr>
 
@@ -46,9 +46,9 @@
   <td><img src="vis_output/wash_hands.jpg"></td>
 </tr>
 <tr>
-  <td width=25% style="text-align:center;color:gray;">"Can you segment <u>the unusual part</u> in this image and explain why."</td>
-  <td width=25% style="text-align:center;">"Sure, it is [SEG]. In the image, the unusual part is <u>the dog wearing a reindeer antler headband</u>..."</td>
-  <td width=25% style="text-align:center;color:gray">"Where to wash hands in this image? Please output segmentation mask."</td>
+  <td width=25% style="text-align:center;color:gray;">"Can you segment <ins>the unusual part</ins> in this image and explain why."</td>
+  <td width=25% style="text-align:center;">"Sure, it is [SEG]. In the image, the unusual part is <ins>the dog wearing a reindeer antler headband</ins>..."</td>
+  <td width=25% style="text-align:center;color:gray">"Where to <ins>wash hands</ins> in this image? Please output segmentation mask."</td>
   <td width=25% style="text-align:center;">"Sure, [SEG]."</td>
 </tr>
 </table>
