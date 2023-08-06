@@ -22,7 +22,7 @@
 <tr>
   <td width=25% style="text-align:center;color:gray;">"Who was <ins>the president of the US</ins> in this image? Please output segmentation mask and explain the reason."</td>
   <td width=25% style="text-align:center;">"Sure, the segmentation result is [SEG]. The President of the United States in the image is <ins>President Obama.</ins>”</td>
-  <td width=25% style="text-align:center;color:gray">"Who was <ins>Tthe president of the US</ins> in this image? Please output segmentation mask and explain why."</td>
+  <td width=25% style="text-align:center;color:gray">"Who was <ins>the president of the US</ins> in this image? Please output segmentation mask and explain why."</td>
   <td width=25% style="text-align:center;">"Sure, [SEG]. In the image, the President of the United States is <ins>President Trump.</ins>"</td>
 </tr>
 
