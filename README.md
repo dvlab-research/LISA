@@ -27,27 +27,27 @@
 </tr>
 
 <tr>
-  <td><img src="imgs/dog_with_horn.jpg"></td>
-  <td><img src="vis_output/dog_with_horn.jpg"></td>
+  <td><img src="imgs/stand_higher.jpg"></td>
+  <td><img src="vis_output/stand_higher.jpg"></td>
   <td><img src="imgs/camera_lens.jpg"></td>              
   <td><img src="vis_output/camera_lens.jpg"></td>
 </tr>
 <tr>
-  <td width=25% style="text-align:center;color:gray;">"Can you segment the unusual part in this image and explain why."</td>
-  <td width=25% style="text-align:center;">"Sure, it is [SEG]. In the image, the unusual part is the dog wearing a reindeer antler headband. This is not a common sight, as dogs typically do not wear accessories like this..."</td>
+  <td width=25% style="text-align:center;color:gray;">"What can make the woman stand higher? Please output segmentation mask and explain why."</td>
+  <td width=25% style="text-align:center;">"Sure, [SEG]. The woman is standing higher by using a ladder..."</td>
   <td width=25% style="text-align:center;color:gray">"Can you segment the camera lens that is more suitable for photographing nearby objects in this image?"</td>
   <td width=25% style="text-align:center;">"Sure, [SEG]."</td>
 </tr>
 
 <tr>
-  <td><img src="imgs/stand_higher.jpg"></td>
-  <td><img src="vis_output/stand_higher.jpg"></td>
+  <td><img src="imgs/dog_with_horn.jpg"></td>
+  <td><img src="vis_output/dog_with_horn.jpg"></td>
   <td><img src="imgs/wash_hands.jpg"></td>              
   <td><img src="vis_output/wash_hands.jpg"></td>
 </tr>
 <tr>
-  <td width=25% style="text-align:center;color:gray;">"What can make the woman stand higher? Please output segmentation mask and explain why."</td>
-  <td width=25% style="text-align:center;">"Sure, [SEG]. The woman is standing higher by using a ladder. She is on the ladder, which is placed against the side of the house, allowing her to reach the higher parts of the building. This is a common tool used for working on elevated surfaces, such as painting or repairing the exterior of a house."</td>
+  <td width=25% style="text-align:center;color:gray;">"Can you segment the unusual part in this image and explain why."</td>
+  <td width=25% style="text-align:center;">"Sure, it is [SEG]. In the image, the unusual part is the dog wearing a reindeer antler headband..."</td>
   <td width=25% style="text-align:center;color:gray">"Where to wash hands in this image? Please output segmentation mask."</td>
   <td width=25% style="text-align:center;">"Sure, [SEG]."</td>
 </tr>
