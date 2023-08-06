@@ -51,6 +51,19 @@
   <td width=25% style="text-align:center;color:gray">"Where to <ins>wash hands</ins> in this image? Please output segmentation mask."</td>
   <td width=25% style="text-align:center;">"Sure, [SEG]."</td>
 </tr>
+
+<tr>
+  <td><img src="imgs/jackma.jpg"></td>
+  <td><img src="vis_output/jackma.jpg"></td>
+  <td><img src="imgs/blackpink.jpg"></td>              
+  <td><img src="vis_output/blackpink.jpg"></td>
+</tr>
+<tr>
+  <td width=25% style="text-align:center;color:gray;">"Can you segment <ins>the founder of Alibaba</ins> in this image and explain why?"</td>
+  <td width=25% style="text-align:center;">"Sure, it is [SEG]. In the image, the man wearing a red tie and sitting on one of the chairs is <ins>Jack Ma</ins>, the co-founder of Alibaba Group..."</td>
+  <td width=25% style="text-align:center;color:gray">"Please segment <ins>Lisa</ins> in this figure."</td>
+  <td width=25% style="text-align:center;">"Sure, [SEG]."</td>
+</tr>
 </table>
 
 <p align="center"> <img src="imgs/fig_overview.jpg" width="100%"> </p>
