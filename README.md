@@ -164,7 +164,7 @@ Besides, we leveraged GPT-3.5 for rephrasing instructions, so images in the trai
 If you find this project useful in your research, please consider citing:
 
 ```
-@article{reason-seg,
+@article{reason_seg,
   title={LISA: Reasoning Segmentation via Large Language Model},
   author={Xin Lai and Zhuotao Tian and Yukang Chen and Yanwei Li and Yuhui Yuan and Shu Liu and Jiaya Jia},
   journal={arXiv:2308.00692},
