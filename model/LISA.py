@@ -10,13 +10,6 @@ import torch.nn.functional as F
 import transformers
 
 from transformers import LlamaForCausalLM, CLIPVisionModel, BitsAndBytesConfig
-from peft import (
-    LoraConfig,
-    get_peft_model,
-    get_peft_model_state_dict,
-    prepare_model_for_int8_training,
-    set_peft_model_state_dict,
-)
 from .llava.model.llava import LlavaLlamaForCausalLM
 from .segment_anything import build_sam_vit_l, build_sam_vit_h
 
