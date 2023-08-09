@@ -76,12 +76,13 @@ class ReasonSegDataset(torch.utils.data.Dataset):
             ) as f:
                 items = json.load(f)
             for item in items:
-                img_name = item["image_path"].split("/")[-1]
+                img_name = item["image"]
                 self.img_to_explanation[img_name] = {
                     "query": item["query"],
                     "outputs": item["outputs"],
                 }
 
+            print("len(self.img_to_explanation): ", len(self.img_to_explanation))
 
     def __len__(self):
         return self.samples_per_epoch

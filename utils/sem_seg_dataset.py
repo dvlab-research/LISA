@@ -104,10 +104,6 @@ def init_paco_lvis(base_image_dir):
             obj, part = cat_split
             obj = obj.split("_(")[0]
             part = part.split("_(")[0]
-            # if random.random() < 0.5:
-            #   name = obj + " " + part
-            # else:
-            #   name = "the {} of the {}".format(part, obj)
             name = (obj, part)
         class_map_paco_lvis[cat["id"]] = name
     img_ids = coco_api_paco_lvis.getImgIds()
