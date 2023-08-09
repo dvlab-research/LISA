@@ -63,7 +63,6 @@ class ReferSegDataset(torch.utils.data.Dataset):
             ref_ids_train = refer_api.getRefIds(split="train")
             images_ids_train = refer_api.getImgIds(ref_ids=ref_ids_train)
             refs_train = refer_api.loadRefs(ref_ids=ref_ids_train)
-            ref_file = os.path.join(DATA_DIR, ds, "refs(" + splitBy + ").p")
 
             refer_seg_ds = {}
             refer_seg_ds["images"] = []
@@ -149,7 +148,6 @@ class ReferSegDataset(torch.utils.data.Dataset):
         sampled_classes = sampled_sents
         img = cv2.imread(image_path)
         images = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        ori_size = images.shape[:2]
 
         # preprocess images for clip
         images_clip = self.clip_image_processor.preprocess(images, return_tensors="pt")[
@@ -163,7 +161,6 @@ class ReferSegDataset(torch.utils.data.Dataset):
 
         questions = []
         answers = []
-        class_ids = []
         for text in sampled_classes:
             text = text.strip()
             assert len(text.split("||")) == 1
@@ -183,7 +180,6 @@ class ReferSegDataset(torch.utils.data.Dataset):
             conversations.append(conv.get_prompt())
             i += 1
 
-        # ==============================
         # replace <image> token
         for i in range(len(conversations)):
             replace_token = DEFAULT_IMAGE_PATCH_TOKEN * image_token_len
@@ -193,7 +189,6 @@ class ReferSegDataset(torch.utils.data.Dataset):
             conversations[i] = conversations[i].replace(
                 DEFAULT_IMAGE_TOKEN, replace_token
             )
-        # ==============================
 
         images = self.preprocess(torch.from_numpy(images).permute(2, 0, 1).contiguous())
 
@@ -223,41 +218,8 @@ class ReferSegDataset(torch.utils.data.Dataset):
             masks.append(m)
 
         masks = np.stack(masks, axis=0)
-
-        # debug
-        # print("masks.shape: ", masks.shape)
-        # for i in range(masks.shape[0]):
-        #   cv2.imwrite("debug/{}_mask_{}.png".format(image_path.split("refer_seg/images")[-1].replace("/", "-").split(".")[0], sampled_sents[i]), masks[i]*100)
-
-        # debug
-        # if ds.endswith("masked"):
-        #   save_dir = "./debug/{}".format(image_path.split("/")[-1].split(".")[0])
-        #   os.makedirs(save_dir, exist_ok=True)
-        #   print("masks.shape: ", masks.shape)
-        #   for i in range(masks.shape[0]):
-        #     cv2.imwrite("{}/mask_{}.jpg".format(save_dir, i), masks[i]*100)
-        #   assert len(conversations) == masks.shape[0]
-        #   with open("{}/conversations.txt".format(save_dir), "w+") as f:
-        #     for i in range(len(conversations)):
-        #       f.write("{}. ".format(i) + conversations[i] + "\n")
-        #   shutil.copy(image_path, save_dir)
-
         masks = torch.from_numpy(masks)
         label = torch.ones(masks.shape[1], masks.shape[2]) * self.ignore_label
-
-        # print("refer_seg: {}".format(conversations))
-
-        # # debug
-        # save_dir = "./debug/{}".format(image_path.split("/")[-1].split(".")[0])
-        # os.makedirs(save_dir, exist_ok=True)
-        # print("masks.shape: ", masks.shape)
-        # for i in range(masks.shape[0]):
-        #   cv2.imwrite("{}/mask_{}_{}.jpg".format(save_dir, i, sampled_classes[i]), masks[i].numpy().astype(np.uint8)*100)
-        # assert len(conversations) == masks.shape[0]
-        # with open("{}/conversations.txt".format(save_dir), "w+") as f:
-        #   for i in range(len(conversations)):
-        #     f.write("{}. ".format(i) + conversations[i] + "\n")
-        # shutil.copy(image_path, save_dir)
 
         return (
             image_path,

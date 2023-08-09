@@ -59,10 +59,9 @@ class ReasonSegDataset(torch.utils.data.Dataset):
             self.explanatory_question_list = EXPLANATORY_QUESTION_LIST
 
         if explanatory != -1:
-            self.img_to_why = {}
+            self.img_to_explanation = {}
             for sub_data in [
-                "20230711_2000_0_processed_masked_finished_masked.json",
-                "20230711_2000_0_processed_masked_partial_masked.json",
+                "train.json",
             ]:
                 with open(
                     os.path.join(base_image_dir, "reason_seg", "explanatory", sub_data)
@@ -70,7 +69,7 @@ class ReasonSegDataset(torch.utils.data.Dataset):
                     items = json.load(f)
                 for item in items:
                     img_name = item["image_path"].split("/")[-1]
-                    self.img_to_why[img_name] = {
+                    self.img_to_explanation[img_name] = {
                         "query": item["query"],
                         "outputs": item["outputs"],
                     }
@@ -136,8 +135,8 @@ class ReasonSegDataset(torch.utils.data.Dataset):
 
         image_name = image_path.split("/")[-1]
         if (
-            self.explanatory != -1 and image_name in self.img_to_why
-        ):  # ds in ['20230711_2000_0_processed_masked_partial_masked', '20230711_2000_0_processed_masked_finished_masked', 'trainval_rephrased_20230730_checked_final_masked', 'rephrased_20230730_checked_final_masked']:
+            self.explanatory != -1 and image_name in self.img_to_explanation
+        ): 
             if random.random() < self.explanatory:
                 choice = 2
             else:
@@ -145,7 +144,6 @@ class ReasonSegDataset(torch.utils.data.Dataset):
 
         questions = []
         answers = []
-        class_ids = []
         for text in sampled_sents:
             if is_sentence:
                 question_template = random.choice(self.long_question_list)
@@ -155,13 +153,13 @@ class ReasonSegDataset(torch.utils.data.Dataset):
                 questions.append(question_template.format(class_name=text.lower()))
 
             img_name = image_path.split("/")[-1]
-            if self.explanatory != -1 and img_name in self.img_to_why:
+            if self.explanatory != -1 and img_name in self.img_to_explanation:
                 # choice = random.randint(0, 2)
                 if choice == 0:  # [SEG] token
                     answers.append(random.choice(self.answer_list))
                 elif choice == 1:  # [SEG] token + text answer
                     image_name = image_path.split("/")[-1]
-                    answer = self.img_to_why[image_name]["outputs"]
+                    answer = self.img_to_explanation[image_name]["outputs"]
                     answer = random.choice(self.answer_list) + " {}".format(answer)
                     questions[-1] = (
                         DEFAULT_IMAGE_TOKEN
@@ -172,7 +170,7 @@ class ReasonSegDataset(torch.utils.data.Dataset):
                     answers.append(answer)
                 elif choice == 2:  # vanilla text answer
                     image_name = image_path.split("/")[-1]
-                    answer = self.img_to_why[image_name]["outputs"]
+                    answer = self.img_to_explanation[image_name]["outputs"]
                     questions[-1] = DEFAULT_IMAGE_TOKEN + " " + text
                     answers.append(answer)
                 else:
@@ -192,7 +190,6 @@ class ReasonSegDataset(torch.utils.data.Dataset):
                 conversations.append(conv.get_prompt())
                 i += 1
 
-        # ==============================
         # replace <image> token
         for i in range(len(conversations)):
             replace_token = DEFAULT_IMAGE_PATCH_TOKEN * image_token_len
@@ -202,37 +199,17 @@ class ReasonSegDataset(torch.utils.data.Dataset):
             conversations[i] = conversations[i].replace(
                 DEFAULT_IMAGE_TOKEN, replace_token
             )
-        # ==============================
 
         images = self.preprocess(torch.from_numpy(images).permute(2, 0, 1).contiguous())
 
         image_name = image_path.split("/")[-1]
-        if self.explanatory != -1 and image_name in self.img_to_why and choice == 2:
-            # print("e1")
-
+        if self.explanatory != -1 and image_name in self.img_to_explanation and choice == 2:
             masks = torch.rand(0, *ori_size)
             label = torch.ones(ori_size) * self.ignore_label
         else:
-            # print("e2")
-
             masks = np.stack(sampled_masks, axis=0)
             masks = torch.from_numpy(masks)
             label = torch.ones(masks.shape[1], masks.shape[2]) * self.ignore_label
-
-        # print("reason_seg: {}".format(conversations))
-
-        # # debug
-        # if masks.shape[0] != 0:
-        #   save_dir = "./debug/{}".format(image_path.split("/")[-1].split(".")[0])
-        #   os.makedirs(save_dir, exist_ok=True)
-        #   print("masks.shape: ", masks.shape)
-        #   for i in range(masks.shape[0]):
-        #     cv2.imwrite("{}/mask_{}.jpg".format(save_dir, i), masks[i].numpy().astype(np.uint8)*100)
-        #   assert len(conversations) == masks.shape[0]
-        #   with open("{}/conversations.txt".format(save_dir), "w+") as f:
-        #     for i in range(len(conversations)):
-        #       f.write("{}. ".format(i) + conversations[i] + "\n")
-        #   shutil.copy(image_path, save_dir)
 
         return (
             image_path,
