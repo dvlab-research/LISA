@@ -72,7 +72,6 @@ def parse_args(args):
         "--grad_accumulation_steps",
         default=10,
         type=int,
-        help="batch size per device per step",
     )
     parser.add_argument("--val_batch_size", default=1, type=int)
     parser.add_argument("--workers", default=4, type=int)
@@ -90,9 +89,7 @@ def parse_args(args):
     parser.add_argument("--exclude_val", action="store_true", default=False)
     parser.add_argument("--no_eval", action="store_true", default=False)
     parser.add_argument("--eval_only", action="store_true", default=False)
-    parser.add_argument(
-        "--vision_pretrained", default="PATH TO SAM ViT-H Pre-trained Wegiht", type=str
-    )
+    parser.add_argument("--vision_pretrained", default="PATH_TO_SAM_ViT-H", type=str)
     parser.add_argument("--weight", default="", type=str)
     parser.add_argument("--print_freq", default=1, type=int)
     parser.add_argument("--start_epoch", default=0, type=int)
