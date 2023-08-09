@@ -1,17 +1,76 @@
 # LISA: Reasoning Segmentation via Large Language Model
 
-<font size=10><div align='center'><b>LISA</b>: Large <b>L</b>anguage <b>I</b>nstructed <b>S</b>egmentation <b>A</b>ssistant</div></font>
+<font size=7><div align='center'><b>LISA</b>: Large <b>L</b>anguage <b>I</b>nstructed <b>S</b>egmentation <b>A</b>ssistant</div></font>
 
-<font size=10><div align='center' > <a href=https://arxiv.org/pdf/2308.00692.pdf>**Paper**</a> | <a href="https://huggingface.co/xinlai">**Models**</a> | [**Inference**](#inference) | [**Dataset**](#dataset) | <a href="http://103.170.5.190:7860/">**Online Demo**</a></div></font>
+<font size=7><div align='center' > <a href=https://arxiv.org/pdf/2308.00692.pdf>**Paper**</a> | <a href="https://huggingface.co/xinlai">**Models**</a> | **Training** (Coming Soon) | [**Inference**](#inference) | [**Dataset**](#dataset) | <a href="http://103.170.5.190:7860/">**Online Demo**</a></div></font>
 
+<!-- <p align="center"> <img src="imgs/teaser.jpg" width="100%"> </p> -->
+
+<table class="center">
+<tr>
+  <td style="text-align:center;"><b>Input</b></td>
+  <td style="text-align:center;"><b>Output</b></td>
+  <td style="text-align:center;"><b>Input</b></td>
+  <td style="text-align:center;"><b>Output</b></td>
+</tr>
+<tr>
+  <td><img src="imgs/obama.jpg"></td>
+  <td><img src="vis_output/obama.jpg"></td>
+  <td><img src="imgs/trump.jpg"></td>              
+  <td><img src="vis_output/trump.jpg"></td>
+</tr>
+<tr>
+  <td width=25% style="text-align:center;color:gray;">"Who was <ins>the president of the US</ins> in this image? Please output segmentation mask and explain the reason."</td>
+  <td width=25% style="text-align:center;">"Sure, the segmentation result is [SEG]. The President of the United States in the image is <ins>President Obama.</ins>”</td>
+  <td width=25% style="text-align:center;color:gray">"Who was <ins>the president of the US</ins> in this image? Please output segmentation mask and explain why."</td>
+  <td width=25% style="text-align:center;">"Sure, [SEG]. In the image, the President of the United States is <ins>President Trump.</ins>"</td>
+</tr>
+
+<tr>
+  <td><img src="imgs/stand_higher.jpg"></td>
+  <td><img src="vis_output/stand_higher.jpg"></td>
+  <td><img src="imgs/camera_lens.jpg"></td>              
+  <td><img src="vis_output/camera_lens.jpg"></td>
+</tr>
+<tr>
+  <td width=25% style="text-align:center;color:gray;">"What can <ins>make the woman stand higher</ins>? Please output segmentation mask and explain why."</td>
+  <td width=25% style="text-align:center;">"Sure, [SEG]. The woman is <ins>standing higher by using a ladder</ins>..."</td>
+  <td width=25% style="text-align:center;color:gray">"Can you segment <ins>the camera lens that is more suitable for photographing nearby objects</ins> in this image?"</td>
+  <td width=25% style="text-align:center;">"Sure, [SEG]."</td>
+</tr>
+
+<tr>
+  <td><img src="imgs/dog_with_horn.jpg"></td>
+  <td><img src="vis_output/dog_with_horn.jpg"></td>
+  <td><img src="imgs/wash_hands.jpg"></td>              
+  <td><img src="vis_output/wash_hands.jpg"></td>
+</tr>
+<tr>
+  <td width=25% style="text-align:center;color:gray;">"Can you segment <ins>the unusual part</ins> in this image and explain why."</td>
+  <td width=25% style="text-align:center;">"Sure, it is [SEG]. In the image, the unusual part is <ins>the dog wearing a reindeer antler headband</ins>..."</td>
+  <td width=25% style="text-align:center;color:gray">"Where to <ins>wash hands</ins> in this image? Please output segmentation mask."</td>
+  <td width=25% style="text-align:center;">"Sure, [SEG]."</td>
+</tr>
+
+<tr>
+  <td><img src="imgs/jackma.jpg"></td>
+  <td><img src="vis_output/jackma.jpg"></td>
+  <td><img src="imgs/blackpink.jpg"></td>              
+  <td><img src="vis_output/blackpink.jpg"></td>
+</tr>
+<tr>
+  <td width=25% style="text-align:center;color:gray;">"Can you segment <ins>the founder of Alibaba</ins> in this image and explain why?"</td>
+  <td width=25% style="text-align:center;">"Sure, it is [SEG]. In the image, the man wearing a red tie and sitting on one of the chairs is <ins>Jack Ma</ins>, the co-founder of Alibaba Group..."</td>
+  <td width=25% style="text-align:center;color:gray">"Please segment <ins>Lisa</ins> in this figure."</td>
+  <td width=25% style="text-align:center;">"Sure, [SEG]."</td>
+</tr>
+</table>
 
 <p align="center"> <img src="imgs/fig_overview.jpg" width="100%"> </p>
 
-<p align="center"> <img src="imgs/teaser.jpg" width="100%"> </p>
-
 ## News
 - [x] [2023.8.4] [Online Demo](http://103.170.5.190:7860/) is released! 
-- [x] [2023.8.4] [*ReasonSeg* Dataset](https://drive.google.com/drive/folders/125mewyg5Ao6tZ3ZdJ-1-E3n04LGVELqy?usp=sharing) and the [LISA-13B-llama2-v0-explainatory](https://huggingface.co/xinlai/LISA-13B-llama2-v0-explainatory) model are released! 
+- [x] [2023.8.4] [*ReasonSeg* Dataset](https://drive.google.com/drive/folders/125mewyg5Ao6tZ3ZdJ-1-E3n04LGVELqy?usp=sharing) and the [LISA-13B-llama2-v0-explanatory](https://huggingface.co/xinlai/LISA-13B-llama2-v0-explanatory) model are released! 
 - [x] [2023.8.3] Inference code and the [LISA-13B-llama2-v0](https://huggingface.co/xinlai/LISA-13B-llama2-v0) model are released. Welcome to check out!
 - [x] [2023.8.2] [Paper](https://arxiv.org/pdf/2308.00692.pdf) is released and GitHub repo is created.
 
@@ -126,7 +185,7 @@ deepspeed --master_port=24999 train_ds.py --version="PATH_TO_LLaVA_Wegihts" --da
 
  
 ## Inference 
-To chat with [LISA-13B-llama2-v0](https://huggingface.co/xinlai/LISA-13B-llama2-v0) or [LISA-13B-llama2-v0-explainatory](https://huggingface.co/xinlai/LISA-13B-llama2-v0-explainatory): (Note that LISA-13B-llama2-v0 currently does not support explanatory answers.)
+To chat with [LISA-13B-llama2-v0](https://huggingface.co/xinlai/LISA-13B-llama2-v0) or [LISA-13B-llama2-v0-explanatory](https://huggingface.co/xinlai/LISA-13B-llama2-v0-explanatory): (Note that LISA-13B-llama2-v0 currently does not support explanatory answers.)
 ```
 CUDA_VISIBLE_DEVICES=0 python3 chat.py --version='xinlai/LISA-13B-llama2-v0'
 ```
@@ -182,7 +241,7 @@ Besides, we leveraged GPT-3.5 for rephrasing instructions, so images in the trai
 If you find this project useful in your research, please consider citing:
 
 ```
-@article{reason-seg,
+@article{reason_seg,
   title={LISA: Reasoning Segmentation via Large Language Model},
   author={Xin Lai and Zhuotao Tian and Yukang Chen and Yanwei Li and Yuhui Yuan and Shu Liu and Jiaya Jia},
   journal={arXiv:2308.00692},
