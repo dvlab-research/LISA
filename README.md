@@ -196,6 +196,7 @@ deepspeed --master_port=24999 train_ds.py \
 To chat with [LISA-13B-llama2-v0](https://huggingface.co/xinlai/LISA-13B-llama2-v0) or [LISA-13B-llama2-v0-explanatory](https://huggingface.co/xinlai/LISA-13B-llama2-v0-explanatory): (Note that LISA-13B-llama2-v0 currently does not support explanatory answers.)
 ```
 CUDA_VISIBLE_DEVICES=0 python3 chat.py --version='xinlai/LISA-13B-llama2-v0'
+CUDA_VISIBLE_DEVICES=0 python3 chat.py --version='xinlai/LISA-13B-llama2-v0-explanatory'
 ```
 To use `bf16` or `fp16` data type for inference:
 ```

@@ -3,6 +3,7 @@ import os
 import sys
 
 import cv2
+import glob
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -82,12 +83,35 @@ def main(args):
         load_in_4bit=args.load_in_4bit,
     )
 
+    if os.path.exists(args.version):
+        model_dir = args.version
+    else: # hack for cached pre-trained weights
+        user_name, model_name = args.version.split("/")
+        cache_dir = "{}/.cache/huggingface/hub/models--{}--{}".format(os.environ['HOME'], user_name, model_name)
+        if os.path.exists(cache_dir):
+            model1_dir = glob.glob("{}/snapshots/*/pytorch_model-visual_model.bin".format(cache_dir))
+            model2_dir = glob.glob("{}/snapshots/*/pytorch_model-text_hidden_fcs.bin".format(cache_dir))
+            if len(model1_dir) == 0 or len(model2_dir) == 0:
+                raise ValueError("Pre-trained weights for visual_model or text_hidden_fcs do not exist in {}.".format(
+                    cache_dir
+                ))
+            model1_dir = ["/".join(x.split("/")[:-1]) for x in model1_dir]
+            model2_dir = ["/".join(x.split("/")[:-1]) for x in model2_dir]
+            model_dir = list(set(model1_dir).intersection(set(model2_dir)))
+            if len(model_dir) == 0:
+                raise ValueError("Pre-trained weights for visual_model or text_hidden_fcs do not exist in {}.".format(
+                    cache_dir
+                ))
+            model_dir = model_dir[0]
+        else:
+            raise ValueError("The path {} does not exists.".format(cache_dir))
+
     weight = {}
     visual_model_weight = torch.load(
-        os.path.join(args.version, "pytorch_model-visual_model.bin")
+        os.path.join(model_dir, "pytorch_model-visual_model.bin")
     )
     text_hidden_fcs_weight = torch.load(
-        os.path.join(args.version, "pytorch_model-text_hidden_fcs.bin")
+        os.path.join(model_dir, "pytorch_model-text_hidden_fcs.bin")
     )
     weight.update(visual_model_weight)
     weight.update(text_hidden_fcs_weight)
