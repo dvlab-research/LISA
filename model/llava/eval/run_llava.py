@@ -9,9 +9,13 @@ from llava.model import *
 from llava.model.utils import KeywordsStoppingCriteria
 from llava.utils import disable_torch_init
 from PIL import Image
-from transformers import (AutoModelForCausalLM, AutoTokenizer,
-                          CLIPImageProcessor, CLIPVisionModel,
-                          StoppingCriteria)
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    CLIPImageProcessor,
+    CLIPVisionModel,
+    StoppingCriteria,
+)
 
 DEFAULT_IMAGE_TOKEN = "<image>"
 DEFAULT_IMAGE_PATCH_TOKEN = "<im_patch>"

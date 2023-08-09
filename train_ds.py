@@ -14,8 +14,13 @@ from torch.utils.tensorboard import SummaryWriter
 
 from model.LISA import LISA
 from utils.dataset import HybridDataset, ValDataset, collate_fn
-from utils.utils import (AverageMeter, ProgressMeter, Summary, dict_to_cuda,
-                         intersectionAndUnionGPU)
+from utils.utils import (
+    AverageMeter,
+    ProgressMeter,
+    Summary,
+    dict_to_cuda,
+    intersectionAndUnionGPU,
+)
 
 
 def parse_args(args):
@@ -54,9 +59,7 @@ def parse_args(args):
     )
     parser.add_argument("--vqa_data", default="llava_instruct_150k", type=str)
     parser.add_argument("--reason_seg_data", default="ReasonSeg|train", type=str)
-    parser.add_argument(
-        "--val_dataset", default="ReasonSeg|val", type=str
-    )
+    parser.add_argument("--val_dataset", default="ReasonSeg|val", type=str)
     parser.add_argument("--dataset_dir", default="./dataset", type=str)
     parser.add_argument("--log_base_dir", default="./runs", type=str)
     parser.add_argument("--exp_name", default="lisa", type=str)
@@ -87,7 +90,9 @@ def parse_args(args):
     parser.add_argument("--exclude_val", action="store_true", default=False)
     parser.add_argument("--no_eval", action="store_true", default=False)
     parser.add_argument("--eval_only", action="store_true", default=False)
-    parser.add_argument("--vision_pretrained", default="PATH TO SAM ViT-H Pre-trained Wegiht", type=str)
+    parser.add_argument(
+        "--vision_pretrained", default="PATH TO SAM ViT-H Pre-trained Wegiht", type=str
+    )
     parser.add_argument("--weight", default="", type=str)
     parser.add_argument("--print_freq", default=1, type=int)
     parser.add_argument("--start_epoch", default=0, type=int)
@@ -133,7 +138,7 @@ def main(args):
     )
 
     if args.weight:
-        state_dict = torch.load(args.weight, map_location='cpu')
+        state_dict = torch.load(args.weight, map_location="cpu")
         model.load_state_dict(state_dict, strict=True)
 
     world_size = torch.cuda.device_count()
@@ -142,7 +147,10 @@ def main(args):
         args.dataset_dir,
         tokenizer,
         args.vision_tower,
-        samples_per_epoch=args.batch_size * args.grad_accumulation_steps * args.steps_per_epoch * world_size,
+        samples_per_epoch=args.batch_size
+        * args.grad_accumulation_steps
+        * args.steps_per_epoch
+        * world_size,
         precision=args.precision,
         image_size=args.image_size,
         num_classes_per_sample=args.num_classes_per_sample,
@@ -163,7 +171,9 @@ def main(args):
             args.val_dataset,
             args.image_size,
         )
-        print(f"Training with {len(train_dataset)} examples and validating with {len(val_dataset)} examples.")
+        print(
+            f"Training with {len(train_dataset)} examples and validating with {len(val_dataset)} examples."
+        )
     else:
         val_dataset = None
         print(f"Training with {len(train_dataset)} examples.")
@@ -215,7 +225,9 @@ def main(args):
 
     if val_dataset is not None:
         assert args.val_batch_size == 1
-        val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset, shuffle=False, drop_last=False)
+        val_sampler = torch.utils.data.distributed.DistributedSampler(
+            val_dataset, shuffle=False, drop_last=False
+        )
         val_loader = torch.utils.data.DataLoader(
             val_dataset,
             batch_size=args.val_batch_size,
@@ -230,13 +242,10 @@ def main(args):
     best_score, cur_ciou = 0.0, 0.0
 
     if args.eval_only:
-        giou, ciou = validate(
-            val_loader, model_engine, 0, writer, args
-        )
+        giou, ciou = validate(val_loader, model_engine, 0, writer, args)
         exit()
 
     for epoch in range(args.start_epoch, args.epochs):
-
         # train for one epoch
         train_iter = train(
             train_loader,
@@ -249,9 +258,7 @@ def main(args):
         )
 
         if args.no_eval == False:
-            giou, ciou = validate(
-                val_loader, model_engine, epoch, writer, args
-            )
+            giou, ciou = validate(val_loader, model_engine, epoch, writer, args)
             is_best = giou > best_score
             best_score = max(giou, best_score)
             cur_ciou = ciou if is_best else cur_ciou

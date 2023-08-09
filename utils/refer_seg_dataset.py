@@ -12,9 +12,14 @@ from model.segment_anything.utils.transforms import ResizeLongestSide
 
 from .conversation import get_default_conv_template
 from .refer import REFER
-from .utils import (ANSWER_LIST, DEFAULT_IM_END_TOKEN, DEFAULT_IM_START_TOKEN,
-                    DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IMAGE_TOKEN,
-                    SHORT_QUESTION_LIST)
+from .utils import (
+    ANSWER_LIST,
+    DEFAULT_IM_END_TOKEN,
+    DEFAULT_IM_START_TOKEN,
+    DEFAULT_IMAGE_PATCH_TOKEN,
+    DEFAULT_IMAGE_TOKEN,
+    SHORT_QUESTION_LIST,
+)
 
 
 class ReferSegDataset(torch.utils.data.Dataset):

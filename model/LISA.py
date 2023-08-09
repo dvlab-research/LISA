@@ -3,14 +3,18 @@ from typing import List
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from peft import (LoraConfig, get_peft_model)
+from peft import LoraConfig, get_peft_model
 from transformers import BitsAndBytesConfig, CLIPVisionModel
 
 from transformers import CLIPVisionModel, BitsAndBytesConfig
 from .llava.model.llava import LlavaLlamaForCausalLM
 from .segment_anything import build_sam_vit_h
-from utils.utils import (DEFAULT_IM_END_TOKEN, DEFAULT_IM_START_TOKEN,
-                    DEFAULT_IMAGE_PATCH_TOKEN)
+from utils.utils import (
+    DEFAULT_IM_END_TOKEN,
+    DEFAULT_IM_START_TOKEN,
+    DEFAULT_IMAGE_PATCH_TOKEN,
+)
+
 
 def dice_loss(
     inputs: torch.Tensor,
@@ -219,7 +223,9 @@ class LISA(nn.Module):
         self.lm.resize_token_embeddings(len(tokenizer))
 
         for n, p in self.lm.named_parameters():
-            if any([x in n for x in ["lm_head", "embed_tokens"]]) and p.shape[0] == len(tokenizer):
+            if any([x in n for x in ["lm_head", "embed_tokens"]]) and p.shape[0] == len(
+                tokenizer
+            ):
                 p.requires_grad = True
 
         # SAM

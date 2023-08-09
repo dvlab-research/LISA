@@ -21,10 +21,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss
-from transformers import (AutoConfig, AutoModelForCausalLM, CLIPImageProcessor,
-                          CLIPVisionModel)
-from transformers.modeling_outputs import (BaseModelOutputWithPast,
-                                           CausalLMOutputWithPast)
+from transformers import (
+    AutoConfig,
+    AutoModelForCausalLM,
+    CLIPImageProcessor,
+    CLIPVisionModel,
+)
+from transformers.modeling_outputs import (
+    BaseModelOutputWithPast,
+    CausalLMOutputWithPast,
+)
 
 from .mpt.modeling_mpt import MPTConfig, MPTForCausalLM, MPTModel
 

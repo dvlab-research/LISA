@@ -11,9 +11,14 @@ from llava.conversation import conv_templates
 from llava.utils import disable_torch_init
 from PIL import Image
 from tqdm import tqdm
-from transformers import (AutoConfig, AutoModelForCausalLM, AutoTokenizer,
-                          CLIPImageProcessor, CLIPVisionModel,
-                          StoppingCriteria)
+from transformers import (
+    AutoConfig,
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    CLIPImageProcessor,
+    CLIPVisionModel,
+    StoppingCriteria,
+)
 
 
 def split_list(lst, n):

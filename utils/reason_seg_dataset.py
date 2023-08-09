@@ -13,10 +13,16 @@ from model.segment_anything.utils.transforms import ResizeLongestSide
 
 from .conversation import get_default_conv_template
 from .data_processing import get_mask_from_json
-from .utils import (ANSWER_LIST, DEFAULT_IM_END_TOKEN, DEFAULT_IM_START_TOKEN,
-                    DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IMAGE_TOKEN,
-                    EXPLANATORY_QUESTION_LIST, LONG_QUESTION_LIST,
-                    SHORT_QUESTION_LIST)
+from .utils import (
+    ANSWER_LIST,
+    DEFAULT_IM_END_TOKEN,
+    DEFAULT_IM_START_TOKEN,
+    DEFAULT_IMAGE_PATCH_TOKEN,
+    DEFAULT_IMAGE_TOKEN,
+    EXPLANATORY_QUESTION_LIST,
+    LONG_QUESTION_LIST,
+    SHORT_QUESTION_LIST,
+)
 
 
 class ReasonSegDataset(torch.utils.data.Dataset):
@@ -72,7 +78,13 @@ class ReasonSegDataset(torch.utils.data.Dataset):
             self.explanatory_question_list = EXPLANATORY_QUESTION_LIST
             self.img_to_explanation = {}
             with open(
-                os.path.join(base_image_dir, "reason_seg", reason_seg_data, "explanatory", "train.json")
+                os.path.join(
+                    base_image_dir,
+                    "reason_seg",
+                    reason_seg_data,
+                    "explanatory",
+                    "train.json",
+                )
             ) as f:
                 items = json.load(f)
             for item in items:
@@ -131,9 +143,7 @@ class ReasonSegDataset(torch.utils.data.Dataset):
         ]
 
         image_name = image_path.split("/")[-1]
-        if (
-            self.explanatory != -1 and image_name in self.img_to_explanation
-        ): 
+        if self.explanatory != -1 and image_name in self.img_to_explanation:
             if random.random() < self.explanatory:
                 choice = 2
             else:
@@ -200,7 +210,11 @@ class ReasonSegDataset(torch.utils.data.Dataset):
         images = self.preprocess(torch.from_numpy(images).permute(2, 0, 1).contiguous())
 
         image_name = image_path.split("/")[-1]
-        if self.explanatory != -1 and image_name in self.img_to_explanation and choice == 2:
+        if (
+            self.explanatory != -1
+            and image_name in self.img_to_explanation
+            and choice == 2
+        ):
             masks = torch.rand(0, *ori_size)
             label = torch.ones(ori_size) * self.ignore_label
         else:

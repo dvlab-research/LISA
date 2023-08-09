@@ -19,11 +19,19 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss
-from transformers import (AutoConfig, AutoModelForCausalLM, CLIPImageProcessor,
-                          CLIPVisionModel, LlamaConfig, LlamaForCausalLM,
-                          LlamaModel)
-from transformers.modeling_outputs import (BaseModelOutputWithPast,
-                                           CausalLMOutputWithPast)
+from transformers import (
+    AutoConfig,
+    AutoModelForCausalLM,
+    CLIPImageProcessor,
+    CLIPVisionModel,
+    LlamaConfig,
+    LlamaForCausalLM,
+    LlamaModel,
+)
+from transformers.modeling_outputs import (
+    BaseModelOutputWithPast,
+    CausalLMOutputWithPast,
+)
 
 DEFAULT_IMAGE_TOKEN = "<image>"
 DEFAULT_IMAGE_PATCH_TOKEN = "<im_patch>"

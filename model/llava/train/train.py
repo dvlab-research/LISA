@@ -715,8 +715,9 @@ def train():
                     "[WARNING] As of 4/30/23, this feature requires PyTorch-nightly build.  See here for details: https://github.com/haotian-liu/LLaVA#experimental-use-fsdp-to-save-memory-in-pretraining"
                 )
 
-                from torch.distributed.fsdp.fully_sharded_data_parallel import \
-                    FullyShardedDataParallel as FSDP
+                from torch.distributed.fsdp.fully_sharded_data_parallel import (
+                    FullyShardedDataParallel as FSDP,
+                )
 
                 def patch_FSDP_use_orig_params(func):
                     def wrap_func(*args, **kwargs):

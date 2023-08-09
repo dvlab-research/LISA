@@ -9,12 +9,15 @@ from collections import defaultdict
 import gradio as gr
 import requests
 from llava.constants import LOGDIR
-from llava.conversation import (SeparatorStyle, conv_templates,
-                                default_conversation)
+from llava.conversation import SeparatorStyle, conv_templates, default_conversation
 from llava.serve.gradio_css import code_highlight_css
 from llava.serve.gradio_patch import Chatbot as grChatbot
-from llava.utils import (build_logger, moderation_msg, server_error_msg,
-                         violates_moderation)
+from llava.utils import (
+    build_logger,
+    moderation_msg,
+    server_error_msg,
+    violates_moderation,
+)
 
 logger = build_logger("gradio_web_server", "gradio_web_server.log")
 

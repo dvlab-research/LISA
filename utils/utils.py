@@ -12,8 +12,12 @@ DEFAULT_IM_END_TOKEN = "<im_end>"
 SHORT_QUESTION_LIST = [
     DEFAULT_IMAGE_TOKEN + " " + "Can you segment the {class_name} in this image?",
     DEFAULT_IMAGE_TOKEN + " " + "Please segment the {class_name} in this image.",
-    DEFAULT_IMAGE_TOKEN + " " + "What is {class_name} in this image? Please respond with segmentation mask.",
-    DEFAULT_IMAGE_TOKEN + " " + "What is {class_name} in this image? Please output segmentation mask.",
+    DEFAULT_IMAGE_TOKEN
+    + " "
+    + "What is {class_name} in this image? Please respond with segmentation mask.",
+    DEFAULT_IMAGE_TOKEN
+    + " "
+    + "What is {class_name} in this image? Please output segmentation mask.",
 ]
 
 LONG_QUESTION_LIST = [
@@ -120,6 +124,7 @@ def intersectionAndUnionGPU(output, target, K, ignore_index=255):
     area_target = torch.histc(target, bins=K, min=0, max=K - 1)
     area_union = area_output + area_target - area_intersection
     return area_intersection, area_union, area_target
+
 
 class ProgressMeter(object):
     def __init__(self, num_batches, meters, prefix=""):

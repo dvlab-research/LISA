@@ -17,8 +17,12 @@ from .reason_seg_dataset import ReasonSegDataset
 from .refer import REFER
 from .refer_seg_dataset import ReferSegDataset
 from .sem_seg_dataset import SemSegDataset
-from .utils import (DEFAULT_IM_END_TOKEN, DEFAULT_IM_START_TOKEN,
-                    DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IMAGE_TOKEN)
+from .utils import (
+    DEFAULT_IM_END_TOKEN,
+    DEFAULT_IM_START_TOKEN,
+    DEFAULT_IMAGE_PATCH_TOKEN,
+    DEFAULT_IMAGE_TOKEN,
+)
 from .vqa_dataset import VQADataset
 
 
@@ -67,7 +71,7 @@ def collate_fn(batch, tokenizer=None):
         max_length=tokenizer.model_max_length,
         truncation=True,
     )
-        
+
     input_ids = tokenize_data.input_ids
     attention_masks = tokenize_data.attention_mask
 
@@ -261,7 +265,7 @@ class ValDataset(torch.utils.data.Dataset):
                 os.path.join(self.base_image_dir, "reason_seg", ds, split, "*.jpg")
             )
             self.images = images
-            self.data_type = 'reason_seg'
+            self.data_type = "reason_seg"
         elif len(splits) == 3:
             ds, splitBy, split = splits
             refer_api = REFER(self.base_image_dir, ds, splitBy)
@@ -294,7 +298,7 @@ class ValDataset(torch.utils.data.Dataset):
                 ]
             refer_seg_ds["img2refs"] = img2refs
             self.refer_seg_ds = refer_seg_ds
-            self.data_type = 'refer_seg'
+            self.data_type = "refer_seg"
 
         self.ds = ds
         self.image_size = image_size
@@ -303,7 +307,7 @@ class ValDataset(torch.utils.data.Dataset):
         self.clip_image_processor = CLIPImageProcessor.from_pretrained(vision_tower)
 
     def __len__(self):
-        if self.data_type == 'refer_seg':
+        if self.data_type == "refer_seg":
             return len(self.refer_seg_ds["images"])
         else:
             return len(self.images)
@@ -321,7 +325,7 @@ class ValDataset(torch.utils.data.Dataset):
         return x
 
     def __getitem__(self, idx):
-        if self.data_type == 'refer_seg':
+        if self.data_type == "refer_seg":
             refer_seg_ds = self.refer_seg_ds
             images = refer_seg_ds["images"]
             annotations = refer_seg_ds["annotations"]
@@ -406,7 +410,7 @@ class ValDataset(torch.utils.data.Dataset):
 
         images = self.preprocess(torch.from_numpy(images).permute(2, 0, 1).contiguous())
 
-        if self.data_type == 'refer_seg':
+        if self.data_type == "refer_seg":
             masks = []
             for i, ann_id in enumerate(sampled_ann_ids):
                 ann = annotations[ann_id]

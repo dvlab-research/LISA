@@ -10,8 +10,13 @@ from transformers import CLIPImageProcessor
 from model.segment_anything.utils.transforms import ResizeLongestSide
 
 from .conversation import get_default_conv_template
-from .utils import (DEFAULT_IM_END_TOKEN, DEFAULT_IM_START_TOKEN,
-                    DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IMAGE_TOKEN)
+from .utils import (
+    DEFAULT_IM_END_TOKEN,
+    DEFAULT_IM_START_TOKEN,
+    DEFAULT_IMAGE_PATCH_TOKEN,
+    DEFAULT_IMAGE_TOKEN,
+)
+
 
 class VQADataset(torch.utils.data.Dataset):
     pixel_mean = torch.Tensor([123.675, 116.28, 103.53]).view(-1, 1, 1)
@@ -49,7 +54,7 @@ class VQADataset(torch.utils.data.Dataset):
         self.vqa_data = vqa_data
 
         print("vqa_data: ", len(self.vqa_data))
-        
+
     def __len__(self):
         return self.samples_per_epoch
 
@@ -72,7 +77,11 @@ class VQADataset(torch.utils.data.Dataset):
         img = cv2.imread(image_path)
         images = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         ori_size = images.shape[:2]
-        images_clip = self.clip_image_processor.preprocess(images, return_tensors="pt")["pixel_values"][0]  # preprocess images for clip
+        images_clip = self.clip_image_processor.preprocess(images, return_tensors="pt")[
+            "pixel_values"
+        ][
+            0
+        ]  # preprocess images for clip
         image_token_len = (images_clip.shape[1] // 14) * (
             images_clip.shape[2] // 14
         )  # FIXME: 14 is hardcoded patch size
