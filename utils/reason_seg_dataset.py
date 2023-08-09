@@ -55,25 +55,6 @@ class ReasonSegDataset(torch.utils.data.Dataset):
         self.long_question_list = LONG_QUESTION_LIST
         self.answer_list = ANSWER_LIST
 
-        if explanatory != -1:
-            self.explanatory_question_list = EXPLANATORY_QUESTION_LIST
-
-        if explanatory != -1:
-            self.img_to_explanation = {}
-            for sub_data in [
-                "train.json",
-            ]:
-                with open(
-                    os.path.join(base_image_dir, "reason_seg", "explanatory", sub_data)
-                ) as f:
-                    items = json.load(f)
-                for item in items:
-                    img_name = item["image_path"].split("/")[-1]
-                    self.img_to_explanation[img_name] = {
-                        "query": item["query"],
-                        "outputs": item["outputs"],
-                    }
-
         reason_seg_data, splits = reason_seg_data.split("|")
         splits = splits.split("_")
         images = []
@@ -86,6 +67,21 @@ class ReasonSegDataset(torch.utils.data.Dataset):
             images.extend(images_split)
         jsons = [path.replace(".jpg", ".json") for path in images]
         self.reason_seg_data = (images, jsons)
+
+        if explanatory != -1:
+            self.explanatory_question_list = EXPLANATORY_QUESTION_LIST
+            self.img_to_explanation = {}
+            with open(
+                os.path.join(base_image_dir, "reason_seg", reason_seg_data, "explanatory", "train.json")
+            ) as f:
+                items = json.load(f)
+            for item in items:
+                img_name = item["image_path"].split("/")[-1]
+                self.img_to_explanation[img_name] = {
+                    "query": item["query"],
+                    "outputs": item["outputs"],
+                }
+
 
     def __len__(self):
         return self.samples_per_epoch
