@@ -57,6 +57,7 @@ def parse_args(args):
     parser.add_argument(
         "--refer_seg_data", default="refclef||refcoco||refcoco+||refcocog", type=str
     )
+    parser.add_argument("--sample_rates", default="9,3,3,1", type=str)
     parser.add_argument("--vqa_data", default="llava_instruct_150k", type=str)
     parser.add_argument("--reason_seg_data", default="ReasonSeg|train", type=str)
     parser.add_argument("--val_dataset", default="ReasonSeg|val", type=str)
@@ -153,6 +154,7 @@ def main(args):
         num_classes_per_sample=args.num_classes_per_sample,
         exclude_val=args.exclude_val,
         dataset=args.dataset,
+        sample_rate=[float(x) for x in args.sample_rates.split(",")],
         sem_seg_data=args.sem_seg_data,
         refer_seg_data=args.refer_seg_data,
         vqa_data=args.vqa_data,

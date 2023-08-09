@@ -152,6 +152,7 @@ class HybridDataset(torch.utils.data.Dataset):
         num_classes_per_sample: int = 3,
         exclude_val=False,
         dataset="sem_seg||refer_seg||vqa||reason_seg",
+        sample_rate=[9, 3, 3, 1],
         sem_seg_data="ade20k||cocostuff||partimagenet||pascal_part||paco_lvis||mapillary",
         refer_seg_data="refclef||refcoco||refcoco+||refcocog",
         vqa_data="llava_instruct_150k",
@@ -163,6 +164,8 @@ class HybridDataset(torch.utils.data.Dataset):
         self.samples_per_epoch = samples_per_epoch
         self.explanatory = explanatory
         self.num_classes_per_sample = num_classes_per_sample
+        sample_rate = np.array(sample_rate)
+        self.sample_rate = sample_rate / sample_rate.sum()
 
         self.base_image_dir = base_image_dir
         self.image_size = image_size
@@ -235,9 +238,7 @@ class HybridDataset(torch.utils.data.Dataset):
         return self.samples_per_epoch
 
     def __getitem__(self, idx):
-        ind = (random.randint(0, 2023) * (idx + 1)) % len(
-            self.datasets
-        )  # random.randint(0, len(self.datasets)-1)
+        ind = np.random.choice(list(range(len(self.datasets))), p=self.sample_rate)
         data = self.all_datasets[ind]
         inference = False
         return *data[0], inference
