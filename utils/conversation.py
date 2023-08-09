@@ -3,8 +3,8 @@ Conversation prompt templates.
 """
 
 import dataclasses
-from enum import auto, Enum
-from typing import List, Tuple, Any
+from enum import Enum, auto
+from typing import Any, List
 
 
 class SeparatorStyle(Enum):

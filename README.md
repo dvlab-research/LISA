@@ -47,6 +47,83 @@ For more details, please refer to the [paper](https://arxiv.org/abs/2308.00692).
 ```
 pip install -r requirements.txt
 ```
+
+## Training
+### Training Data Preparation
+The training data consists of 4 types of data:
+
+1. Semantic segmentation datasets: [ADE20K](http://data.csail.mit.edu/places/ADEchallenge/ADEChallengeData2016.zip), [COCO-Stuff](https://github.com/nightrome/cocostuff#downloads), [Mapillary](https://www.mapillary.com/dataset/vistas), [PACO-LVIS](https://github.com/facebookresearch/paco/tree/main#dataset-setup), [PASCAL-Part](http://roozbehm.info/pascal-parts/pascal-parts.html)
+
+2. Referring segmentation datasets: refCOCO, refCOCO+, refCOCOg [\[Download\]](https://github.com/lichengunc/refer#download)
+
+3. Visual Question Answering dataset: [LLaVA-Instruct-150k](https://huggingface.co/datasets/liuhaotian/LLaVA-Instruct-150K/blob/main/llava_instruct_150k.json)
+
+4. Reasoning segmentation dataset: [ReasonSeg](https://github.com/dvlab-research/LISA#dataset)
+
+Download them from the above links, and organize them as follows.
+
+```
+├── dataset
+│   ├── ade20k
+│   │   ├── annotations
+│   │   └── images
+│   ├── coco
+│   │   └── train2017
+│   ├── cocostuff
+│   │   ├── annotations
+│   │   └── train2017
+│   ├── llava_dataset
+│   │   └── llava_instruct_150k.json
+│   ├── mapillary
+│   │   ├── config_v2.0.json
+│   │   ├── testing
+│   │   ├── training
+│   │   └── validation
+│   ├── reason_seg
+│   │   └── ReasonSeg
+│   │       ├── train
+│   │       ├── val
+│   │       └── explanatory
+│   ├── refer_seg
+│   │   ├── images
+│   │   |   ├── saiapr_tc-12 
+│   │   |   └── mscoco
+│   │   |       └── images
+│   │   |           └── train2014
+│   │   ├── refclef
+│   │   ├── refcoco
+│   │   ├── refcoco+
+│   │   └── refcocog
+│   └── vlpart
+│       ├── paco
+│       │   └── annotations
+│       └── pascal_part
+│           ├── train.json
+│           └── VOCdevkit
+```
+
+### Pre-trained weights
+
+#### LLaVA
+To train LISA-7B or 13B, you need to follow the [instruction](https://github.com/haotian-liu/LLaVA/blob/main/docs/MODEL_ZOO.md) to merge the LLaVA delta weights. Typically, we use the final weights `LLaVA-Lightning-7B-v1-1` and `LLaVA-13B-v1-1` merged from `liuhaotian/LLaVA-Lightning-7B-delta-v1-1` and `liuhaotian/LLaVA-13b-delta-v1-1`, respectively. For Llama2, we can directly use the LLaVA full weights `liuhaotian/llava-llama-2-13b-chat-lightning-preview`.
+
+#### SAM ViT-H weights
+Download SAM ViT-H pre-trained weights from the [link](https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth).
+
+### Training
+```
+deepspeed --master_port=24999 train_ds.py --version="PATH_TO_LLaVA_Wegihts" --dataset_dir='./dataset' --vision_pretrained="PATH_TO_SAM_Weights" --exp_name="lisa-7b"
+```
+When training is finished, to get the full model weight:
+```
+cd ./runs/lisa-7b/ckpt_model && python zero_to_fp32.py . ../pytorch_model.bin
+```
+
+### Validation
+```
+deepspeed --master_port=24999 train_ds.py --version="PATH_TO_LLaVA_Wegihts" --dataset_dir='./dataset' --vision_pretrained="PATH_TO_SAM_Weights" --exp_name="lisa-7b" --weight='PATH_TO_pytorch_model.bin' --eval_only
+```
+
  
 ## Inference 
 To chat with [LISA-13B-llama2-v0](https://huggingface.co/xinlai/LISA-13B-llama2-v0) or [LISA-13B-llama2-v0-explainatory](https://huggingface.co/xinlai/LISA-13B-llama2-v0-explainatory): (Note that LISA-13B-llama2-v0 currently does not support explanatory answers.)
@@ -93,9 +170,9 @@ Important keys contained in JSON files:
 
 The elements of the "shapes" exhibit two categories, namely **"target"** and **"ignore"**. The former category is indispensable for evaluation, while the latter category denotes the ambiguous region and hence disregarded during the evaluation process. 
 
-We provide a <a href="https://github.com/dvlab-research/LISA/blob/main/utils/data_proc_demo.py">**script**</a> that demonstrates how to process the annotations:
+We provide a <a href="https://github.com/dvlab-research/LISA/blob/main/utils/data_processing.py">**script**</a> that demonstrates how to process the annotations:
 ```
-python3 utils/data_proc_demo.py
+python3 utils/data_processing.py
 ```
 
 Besides, we leveraged GPT-3.5 for rephrasing instructions, so images in the training set may have **more than one instructions (but fewer than six)** in the "text" field. During training, users may randomly select one as the text query to obtain a better model.

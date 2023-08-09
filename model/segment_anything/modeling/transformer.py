@@ -4,11 +4,11 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-import torch
-from torch import Tensor, nn
-
 import math
 from typing import Tuple, Type
+
+import torch
+from torch import Tensor, nn
 
 from .common import MLPBlock
 
@@ -198,7 +198,9 @@ class Attention(nn.Module):
         self.embedding_dim = embedding_dim
         self.internal_dim = embedding_dim // downsample_rate
         self.num_heads = num_heads
-        assert self.internal_dim % num_heads == 0, "num_heads must divide embedding_dim."
+        assert (
+            self.internal_dim % num_heads == 0
+        ), "num_heads must divide embedding_dim."
 
         self.q_proj = nn.Linear(embedding_dim, self.internal_dim)
         self.k_proj = nn.Linear(embedding_dim, self.internal_dim)
