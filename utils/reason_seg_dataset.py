@@ -74,6 +74,8 @@ class ReasonSegDataset(torch.utils.data.Dataset):
         jsons = [path.replace(".jpg", ".json") for path in images]
         self.reason_seg_data = (images, jsons)
 
+        print("number of reason_seg samples: ", len(images))
+
         if explanatory != -1:
             self.explanatory_question_list = EXPLANATORY_QUESTION_LIST
             self.img_to_explanation = {}
