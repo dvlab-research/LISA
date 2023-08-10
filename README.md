@@ -170,9 +170,11 @@ Download SAM ViT-H pre-trained weights from the [link](https://dl.fbaipublicfile
 ### Training
 ```
 deepspeed --master_port=24999 train_ds.py \
-  --version="PATH_TO_LLaVA_Wegihts" \
+  --version="PATH_TO_LLaVA" \
   --dataset_dir='./dataset' \
-  --vision_pretrained="PATH_TO_SAM_Weights" \
+  --vision_pretrained="PATH_TO_SAM" \
+  --dataset="sem_seg||refer_seg||vqa||reason_seg" \
+  --sample_rates="9,3,3,1" \
   --exp_name="lisa-7b"
 ```
 When training is finished, to get the full model weight:
@@ -183,9 +185,9 @@ cd ./runs/lisa-7b/ckpt_model && python zero_to_fp32.py . ../pytorch_model.bin
 ### Validation
 ```
 deepspeed --master_port=24999 train_ds.py \
-  --version="PATH_TO_LLaVA_Wegihts" \
+  --version="PATH_TO_LLaVA" \
   --dataset_dir='./dataset' \
-  --vision_pretrained="PATH_TO_SAM_Weights" \
+  --vision_pretrained="PATH_TO_SAM" \
   --exp_name="lisa-7b" \
   --weight='PATH_TO_pytorch_model.bin' \
   --eval_only
