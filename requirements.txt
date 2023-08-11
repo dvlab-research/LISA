@@ -1,6 +1,9 @@
+--extra-index-url https://download.pytorch.org/whl/cu117
+torch==2.0.1
+torchvision==0.15.2
+packaging
 einops==0.4.1
 fastapi==0.100.1
-flash_attn==2.0.4
 gradio==3.39.0
 markdown2==2.4.10
 numpy==1.24.2
@@ -11,8 +14,6 @@ pycocotools==2.0.6
 ray==2.6.1
 Requests==2.31.0
 shortuuid==1.0.11
-torch==1.11.0+cu113
-torchvision==0.12.0+cu113
 tqdm==4.64.1
 transformers==4.29.0
 uvicorn==0.23.2

@@ -103,6 +103,7 @@ For more details, please refer to the [paper](https://arxiv.org/abs/2308.00692).
 ## Installation
 ```
 pip install -r requirements.txt
+pip install flash-attn --no-build-isolation
 ```
 
 ## Training
