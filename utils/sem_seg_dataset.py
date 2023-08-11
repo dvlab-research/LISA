@@ -80,15 +80,15 @@ def init_cocostuff(base_image_dir):
             cocostuff_classes.append(line.strip().split(": ")[-1])
     cocostuff_classes = np.array(cocostuff_classes)
     cocostuff_images = []
-    cocostuff_image_dir = glob.glob(
-        os.path.join(base_image_dir, "cocostuff", "train2017", "*.jpg")
+
+    cocostuff_labels = glob.glob(
+        os.path.join(base_image_dir, "cocostuff", "train2017", "*.png")
     )
-    for image_id in cocostuff_image_dir:
-        cocostuff_images.append(image_id)
-    cocostuff_labels = [
-        x.replace(".jpg", ".png").replace("images", "annotations")
-        for x in cocostuff_images
+    cocostuff_images = [
+        x.replace(".png", ".jpg").replace("cocostuff", "coco")
+        for x in cocostuff_labels
     ]
+
     print("cocostuff: ", len(cocostuff_images))
     return cocostuff_classes, cocostuff_images, cocostuff_labels
 
