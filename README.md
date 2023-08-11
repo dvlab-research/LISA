@@ -131,8 +131,10 @@ Download them from the above links, and organize them as follows.
 │   ├── coco
 │   │   └── train2017
 │   ├── cocostuff
-│   │   ├── annotations
 │   │   └── train2017
+│   │       ├── 000000000009.jpg
+│   │       ├── 000000000009.png
+│   │       └── ...
 │   ├── llava_dataset
 │   │   └── llava_instruct_150k.json
 │   ├── mapillary
