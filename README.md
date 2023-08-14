@@ -1,3 +1,6 @@
+[![Gradio](https://img.shields.io/badge/Gradio-Online%20Demo-blue)](http://103.170.5.190:7860/)
+[![Open in OpenXLab](https://cdn-static.openxlab.org.cn/app-center/openxlab_app.svg)](https://openxlab.org.cn/apps/detail/openxlab-app/LISA)
+
 # LISA: Reasoning Segmentation via Large Language Model
 
 <font size=7><div align='center'><b>LISA</b>: Large <b>L</b>anguage <b>I</b>nstructed <b>S</b>egmentation <b>A</b>ssistant</div></font>
@@ -69,6 +72,7 @@
 <p align="center"> <img src="imgs/fig_overview.jpg" width="100%"> </p>
 
 ## News
+- [x] [2023.8.14] Online demo of LISA is also in [OpenXLab apps](https://openxlab.org.cn/apps/detail/openxlab-app/LISA). Thanks for their support!
 - [x] [2023.8.9] Training code is released!
 - [x] [2023.8.4] [Online Demo](http://103.170.5.190:7860/) is released! 
 - [x] [2023.8.4] [*ReasonSeg* Dataset](https://drive.google.com/drive/folders/125mewyg5Ao6tZ3ZdJ-1-E3n04LGVELqy?usp=sharing) and the [LISA-13B-llama2-v0-explanatory](https://huggingface.co/xinlai/LISA-13B-llama2-v0-explanatory) model are released! 
