@@ -2,6 +2,8 @@
 torch==2.0.1
 torchvision==0.15.2
 packaging
+sentencepiece
+peft==0.4.0
 einops==0.4.1
 fastapi==0.100.1
 gradio==3.39.0
