@@ -17,5 +17,5 @@ ray==2.6.1
 Requests==2.31.0
 shortuuid==1.0.11
 tqdm==4.64.1
-transformers==4.29.0
+transformers==4.31.0
 uvicorn==0.23.2
