@@ -1,3 +1,6 @@
+[![Gradio](https://img.shields.io/badge/Gradio-Online%20Demo-blue)](http://103.170.5.190:7860/)
+[![Open in OpenXLab](https://cdn-static.openxlab.org.cn/app-center/openxlab_app.svg)](https://openxlab.org.cn/apps/detail/openxlab-app/LISA)
+
 # LISA: Reasoning Segmentation via Large Language Model
 
 <font size=7><div align='center'><b>LISA</b>: Large <b>L</b>anguage <b>I</b>nstructed <b>S</b>egmentation <b>A</b>ssistant</div></font>
@@ -69,14 +72,18 @@
 <p align="center"> <img src="imgs/fig_overview.jpg" width="100%"> </p>
 
 ## News
+<<<<<<< HEAD
 - [x] [2023.8.23] Refactor code, and release new model [LISA-13B-llama2-v1](https://huggingface.co/xinlai/LISA-13B-llama2-v1). welcome to check it out!
+=======
+- [x] [2023.8.14] Online demo of LISA is also in [OpenXLab apps](https://openxlab.org.cn/apps/detail/openxlab-app/LISA). Thanks for their support!
+>>>>>>> 0e26916dff58c9f2eaad981f127e1171a7c1e3e0
 - [x] [2023.8.9] Training code is released!
 - [x] [2023.8.4] [Online Demo](http://103.170.5.190:7860/) is released! 
 - [x] [2023.8.4] [*ReasonSeg* Dataset](https://drive.google.com/drive/folders/125mewyg5Ao6tZ3ZdJ-1-E3n04LGVELqy?usp=sharing) and the [LISA-13B-llama2-v0-explanatory](https://huggingface.co/xinlai/LISA-13B-llama2-v0-explanatory) model are released! 
 - [x] [2023.8.3] Inference code and the [LISA-13B-llama2-v0](https://huggingface.co/xinlai/LISA-13B-llama2-v0) model are released. Welcome to check out!
 - [x] [2023.8.2] [Paper](https://arxiv.org/pdf/2308.00692.pdf) is released and GitHub repo is created.
 
-**LISA: Reasoning Segmentation Via Large Language Model [[Paper](https://arxiv.org/abs/2308.00692)]** <br />
+**LISA: Reasoning Segmentation via Large Language Model [[Paper](https://arxiv.org/abs/2308.00692)]** <br />
 [Xin Lai](https://scholar.google.com/citations?user=tqNDPA4AAAAJ&hl=zh-CN),
 [Zhuotao Tian](https://scholar.google.com/citations?user=mEjhz-IAAAAJ&hl=en),
 [Yukang Chen](https://scholar.google.com/citations?user=6p0ygKUAAAAJ&hl=en),
@@ -104,6 +111,7 @@ For more details, please refer to the [paper](https://arxiv.org/abs/2308.00692).
 ## Installation
 ```
 pip install -r requirements.txt
+pip install flash-attn --no-build-isolation
 ```
 
 ## Training
@@ -116,7 +124,7 @@ The training data consists of 4 types of data:
 
 3. Referring segmentation datasets: [refCOCO](https://web.archive.org/web/20220413011718/https://bvisionweb1.cs.unc.edu/licheng/referit/data/refcoco.zip), [refCOCO+](https://web.archive.org/web/20220413011656/https://bvisionweb1.cs.unc.edu/licheng/referit/data/refcoco+.zip), [refCOCOg](https://web.archive.org/web/20220413012904/https://bvisionweb1.cs.unc.edu/licheng/referit/data/refcocog.zip), [refCLEF](https://web.archive.org/web/20220413011817/https://bvisionweb1.cs.unc.edu/licheng/referit/data/refclef.zip) ([saiapr_tc-12](https://web.archive.org/web/20220515000000/http://bvisionweb1.cs.unc.edu/licheng/referit/data/images/saiapr_tc-12.zip)) 
 
-    Note: the origianl links of refCOCO series data are down, and we update them with new ones
+    Note: the original links of refCOCO series data are down, and we update them with new ones. If the download speed is super slow or unstable, we also provide a [OneDrive link](https://mycuhk-my.sharepoint.com/:f:/g/personal/1155154502_link_cuhk_edu_hk/Em5yELVBvfREodKC94nOFLoBLro_LPxsOxNV44PHRWgLcA?e=zQPjsc) to download. **You must also follow the rules that the original datasets require.**
 
 4. Visual Question Answering dataset: [LLaVA-Instruct-150k](https://huggingface.co/datasets/liuhaotian/LLaVA-Instruct-150K/blob/main/llava_instruct_150k.json)
 
@@ -221,7 +229,7 @@ deepspeed --master_port=24999 train_ds.py \
  
 ## Inference 
 
-To chat with [LISA-13B-llama2-v1](https://huggingface.co/xinlai/LISA-13B-llama2-v1) or [LISA-13B-llama2-v1-explanatory] (Coming Soon):
+To chat with [LISA-13B-llama2-v1](https://huggingface.co/xinlai/LISA-13B-llama2-v1) or [LISA-13B-llama2-v1-explanatory](https://huggingface.co/xinlai/LISA-13B-llama2-v1-explanatory) (Coming Soon):
 (Note that `chat.py` currently does not support `v0` models (i.e., `LISA-13B-llama2-v0` and `LISA-13B-llama2-v0-explanatory`), please first checkout to the legacy version repo `git checkout 0e26916` to use the `v0` models.)
 ```
 CUDA_VISIBLE_DEVICES=0 python chat.py --version='xinlai/LISA-13B-llama2-v1'
