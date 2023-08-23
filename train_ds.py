@@ -10,17 +10,15 @@ import numpy as np
 import torch
 import tqdm
 import transformers
+from peft import LoraConfig, get_peft_model
 from torch.utils.tensorboard import SummaryWriter
 
-from model.LISA import LISA
+from model.LISA import LISAForCausalLM
+from model.llava import conversation as conversation_lib
 from utils.dataset import HybridDataset, ValDataset, collate_fn
-from utils.utils import (
-    AverageMeter,
-    ProgressMeter,
-    Summary,
-    dict_to_cuda,
-    intersectionAndUnionGPU,
-)
+from utils.utils import (DEFAULT_IM_END_TOKEN, DEFAULT_IM_START_TOKEN,
+                         AverageMeter, ProgressMeter, Summary, dict_to_cuda,
+                         intersectionAndUnionGPU)
 
 
 def parse_args(args):
@@ -91,9 +89,21 @@ def parse_args(args):
     parser.add_argument("--no_eval", action="store_true", default=False)
     parser.add_argument("--eval_only", action="store_true", default=False)
     parser.add_argument("--vision_pretrained", default="PATH_TO_SAM_ViT-H", type=str)
+    parser.add_argument("--out_dim", default=256, type=int)
     parser.add_argument("--weight", default="", type=str)
+    parser.add_argument("--resume", default="", type=str)
     parser.add_argument("--print_freq", default=1, type=int)
     parser.add_argument("--start_epoch", default=0, type=int)
+    parser.add_argument("--gradient_checkpointing", action="store_true", default=True)
+    parser.add_argument("--train_mask_decoder", action="store_true", default=True)
+    parser.add_argument("--use_mm_start_end", action="store_true", default=True)
+    parser.add_argument("--auto_resume", action="store_true", default=True)
+    parser.add_argument(
+        "--conv_type",
+        default="llava_v1",
+        type=str,
+        choices=["llava_v1", "llava_llama_2"],
+    )
     return parser.parse_args(args)
 
 
@@ -116,28 +126,106 @@ def main(args):
     )
     tokenizer.pad_token = tokenizer.unk_token
     num_added_tokens = tokenizer.add_tokens("[SEG]")
-    ret_token_idx = tokenizer("[SEG]", add_special_tokens=False).input_ids
-    args.seg_token_idx = ret_token_idx[0]
+    args.seg_token_idx = tokenizer("[SEG]", add_special_tokens=False).input_ids[0]
 
-    model = LISA(
-        args.local_rank,
-        args.seg_token_idx,
-        tokenizer,
-        args.version,
-        args.lora_r,
-        args.precision,
-        vision_tower=args.vision_tower,
-        load_in_8bit=args.load_in_8bit,
-        load_in_4bit=args.load_in_4bit,
-        ce_loss_weight=args.ce_loss_weight,
-        dice_loss_weight=args.dice_loss_weight,
-        bce_loss_weight=args.bce_loss_weight,
-        vision_pretrained=args.vision_pretrained,
+    if args.use_mm_start_end:
+        tokenizer.add_tokens(
+            [DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN], special_tokens=True
+        )
+
+    model_args = {
+        "train_mask_decoder": args.train_mask_decoder,
+        "out_dim": args.out_dim,
+        "ce_loss_weight": args.ce_loss_weight,
+        "dice_loss_weight": args.dice_loss_weight,
+        "bce_loss_weight": args.bce_loss_weight,
+        "seg_token_idx": args.seg_token_idx,
+        "vision_pretrained": args.vision_pretrained,
+        "vision_tower": args.vision_tower,
+        "use_mm_start_end": args.use_mm_start_end,
+    }
+    torch_dtype = torch.float32
+    if args.precision == "bf16":
+        torch_dtype = torch.bfloat16
+    elif args.precision == "fp16":
+        torch_dtype = torch.half
+    model = LISAForCausalLM.from_pretrained(
+        args.version, torch_dtype=torch_dtype, low_cpu_mem_usage=True, **model_args
     )
+    model.config.eos_token_id = tokenizer.eos_token_id
+    model.config.bos_token_id = tokenizer.bos_token_id
+    model.config.pad_token_id = tokenizer.pad_token_id
 
-    if args.weight:
-        state_dict = torch.load(args.weight, map_location="cpu")
-        model.load_state_dict(state_dict, strict=True)
+    model.enable_input_require_grads()
+    model.gradient_checkpointing_enable()
+
+    model.get_model().initialize_vision_modules(model.get_model().config)
+    vision_tower = model.get_model().get_vision_tower()
+    vision_tower.to(dtype=torch_dtype, device=args.local_rank)
+    model.get_model().initialize_lisa_modules(model.get_model().config)
+
+    for p in vision_tower.parameters():
+        p.requires_grad = False
+    for p in model.get_model().mm_projector.parameters():
+        p.requires_grad = False
+
+    conversation_lib.default_conversation = conversation_lib.conv_templates[
+        args.conv_type
+    ]
+
+    lora_r = args.lora_r
+    if lora_r > 0:
+
+        def find_linear_layers(model, lora_target_modules):
+            cls = torch.nn.Linear
+            lora_module_names = set()
+            for name, module in model.named_modules():
+                if (
+                    isinstance(module, cls)
+                    and all(
+                        [
+                            x not in name
+                            for x in [
+                                "visual_model",
+                                "vision_tower",
+                                "mm_projector",
+                                "text_hidden_fcs",
+                            ]
+                        ]
+                    )
+                    and any([x in name for x in lora_target_modules])
+                ):
+                    lora_module_names.add(name)
+            return sorted(list(lora_module_names))
+
+        lora_alpha = args.lora_alpha
+        lora_dropout = args.lora_dropout
+        lora_target_modules = find_linear_layers(
+            model, args.lora_target_modules.split(",")
+        )
+        lora_config = LoraConfig(
+            r=lora_r,
+            lora_alpha=lora_alpha,
+            target_modules=lora_target_modules,
+            lora_dropout=lora_dropout,
+            bias="none",
+            task_type="CAUSAL_LM",
+        )
+        model = get_peft_model(model, lora_config)
+        model.print_trainable_parameters()
+
+    model.resize_token_embeddings(len(tokenizer))
+
+    # make text_hidden_fcs, mask_decoder, lm_head, embed_tokens trainable
+    for n, p in model.named_parameters():
+        if any(
+            [
+                x in n
+                for x in ["lm_head", "embed_tokens", "mask_decoder", "text_hidden_fcs"]
+            ]
+        ):
+            print("n: ", n, "p.shape: ", p.shape)
+            p.requires_grad = True
 
     world_size = torch.cuda.device_count()
     args.distributed = world_size > 1
@@ -218,10 +306,36 @@ def main(args):
         model=model,
         model_parameters=model.parameters(),
         training_data=train_dataset,
-        collate_fn=partial(collate_fn, tokenizer=tokenizer),
+        collate_fn=partial(
+            collate_fn,
+            tokenizer=tokenizer,
+            conv_type=args.conv_type,
+            use_mm_start_end=args.use_mm_start_end,
+            local_rank=args.local_rank,
+        ),
         config=ds_config,
     )
 
+    # resume deepspeed checkpoint
+    if args.auto_resume and len(args.resume) == 0:
+        resume = os.path.join(args.log_dir, "ckpt_model")
+        if os.path.exists(resume):
+            args.resume = resume
+
+    if args.resume:
+        load_path, client_state = model_engine.load_checkpoint(args.resume)
+        with open(os.path.join(args.resume, "latest"), "r") as f:
+            ckpt_dir = f.readlines()[0].strip()
+        args.start_epoch = (
+            int(ckpt_dir.replace("global_step", "")) // args.steps_per_epoch
+        )
+        print(
+            "resume training from {}, start from epoch {}".format(
+                args.resume, args.start_epoch
+            )
+        )
+
+    # validation dataset
     if val_dataset is not None:
         assert args.val_batch_size == 1
         val_sampler = torch.utils.data.distributed.DistributedSampler(
@@ -234,7 +348,13 @@ def main(args):
             num_workers=args.workers,
             pin_memory=False,
             sampler=val_sampler,
-            collate_fn=partial(collate_fn, tokenizer=tokenizer),
+            collate_fn=partial(
+                collate_fn,
+                tokenizer=tokenizer,
+                conv_type=args.conv_type,
+                use_mm_start_end=args.use_mm_start_end,
+                local_rank=args.local_rank,
+            ),
         )
 
     train_iter = iter(train_loader)
@@ -408,6 +528,8 @@ def validate(val_loader, model_engine, epoch, writer, args):
     model_engine.eval()
 
     for input_dict in tqdm.tqdm(val_loader):
+        torch.cuda.empty_cache()
+
         input_dict = dict_to_cuda(input_dict)
         if args.precision == "fp16":
             input_dict["images"] = input_dict["images"].half()
@@ -419,7 +541,8 @@ def validate(val_loader, model_engine, epoch, writer, args):
             input_dict["images"] = input_dict["images"].float()
             input_dict["images_clip"] = input_dict["images_clip"].float()
 
-        output_dict = model_engine(**input_dict)
+        with torch.no_grad():
+            output_dict = model_engine(**input_dict)
 
         pred_masks = output_dict["pred_masks"]
         masks_list = output_dict["gt_masks"][0].int()

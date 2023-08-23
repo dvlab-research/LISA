@@ -3,21 +3,22 @@ import os
 import sys
 
 import cv2
-import glob
 import numpy as np
 import torch
 import torch.nn.functional as F
-import transformers
-from transformers import AutoTokenizer, CLIPImageProcessor
+from transformers import AutoTokenizer, BitsAndBytesConfig, CLIPImageProcessor
 
-from model.LISA import LISA
+from model.LISA import LISAForCausalLM
+from model.llava import conversation as conversation_lib
+from model.llava.mm_utils import tokenizer_image_token
 from model.segment_anything.utils.transforms import ResizeLongestSide
-from utils.conversation import get_default_conv_template
+from utils.utils import (DEFAULT_IM_END_TOKEN, DEFAULT_IM_START_TOKEN,
+                         DEFAULT_IMAGE_TOKEN, IMAGE_TOKEN_INDEX)
 
 
 def parse_args(args):
     parser = argparse.ArgumentParser(description="LISA chat")
-    parser.add_argument("--version", default="xinlai/LISA-13B-llama2-v0")
+    parser.add_argument("--version", default="xinlai/LISA-13B-llama2-v1")
     parser.add_argument("--vis_save_path", default="./vis_output", type=str)
     parser.add_argument(
         "--precision",
@@ -26,15 +27,22 @@ def parse_args(args):
         choices=["fp32", "bf16", "fp16"],
         help="precision for inference",
     )
-    parser.add_argument("--image-size", default=1024, type=int, help="image size")
-    parser.add_argument("--model-max-length", default=512, type=int)
-    parser.add_argument("--lora-r", default=-1, type=int)
+    parser.add_argument("--image_size", default=1024, type=int, help="image size")
+    parser.add_argument("--model_max_length", default=512, type=int)
+    parser.add_argument("--lora_r", default=8, type=int)
     parser.add_argument(
         "--vision-tower", default="openai/clip-vit-large-patch14", type=str
     )
     parser.add_argument("--local-rank", default=0, type=int, help="node rank")
     parser.add_argument("--load_in_8bit", action="store_true", default=False)
     parser.add_argument("--load_in_4bit", action="store_true", default=False)
+    parser.add_argument("--use_mm_start_end", action="store_true", default=True)
+    parser.add_argument(
+        "--conv_type",
+        default="llava_v1",
+        type=str,
+        choices=["llava_v1", "llava_llama_2"],
+    )
     return parser.parse_args(args)
 
 
@@ -60,7 +68,7 @@ def main(args):
     os.makedirs(args.vis_save_path, exist_ok=True)
 
     # Create model
-    tokenizer = transformers.AutoTokenizer.from_pretrained(
+    tokenizer = AutoTokenizer.from_pretrained(
         args.version,
         cache_dir=None,
         model_max_length=args.model_max_length,
@@ -68,58 +76,62 @@ def main(args):
         use_fast=False,
     )
     tokenizer.pad_token = tokenizer.unk_token
-    num_added_tokens = tokenizer.add_tokens("[SEG]")
-    ret_token_idx = tokenizer("[SEG]", add_special_tokens=False).input_ids
-    args.seg_token_idx = ret_token_idx[0]
+    args.seg_token_idx = tokenizer("[SEG]", add_special_tokens=False).input_ids[0]
 
-    model = LISA(
-        args.local_rank,
-        args.seg_token_idx,
-        tokenizer,
-        args.version,
-        args.lora_r,
-        args.precision,
-        load_in_8bit=args.load_in_8bit,
-        load_in_4bit=args.load_in_4bit,
+
+    torch_dtype = torch.float32
+    if args.precision == "bf16":
+        torch_dtype = torch.bfloat16
+    elif args.precision == "fp16":
+        torch_dtype = torch.half
+
+    kwargs = {"torch_dtype": torch_dtype}
+    if args.load_in_4bit:
+        kwargs.update(
+            {
+                "torch_dtype": torch.half,
+                "device_map": "auto",
+                "load_in_4bit": True,
+                "quantization_config": BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_compute_dtype=torch.float16,
+                    bnb_4bit_use_double_quant=True,
+                    bnb_4bit_quant_type="nf4",
+                    llm_int8_skip_modules=["visual_model"],
+                ),
+            }
+        )
+    elif args.load_in_8bit:
+        kwargs.update(
+            {
+                "torch_dtype": torch.half,
+                "device_map": "auto",
+                "quantization_config": BitsAndBytesConfig(
+                    llm_int8_skip_modules=["visual_model"],
+                    load_in_8bit=True,
+                ),
+            }
+        )
+
+    model = LISAForCausalLM.from_pretrained(
+        args.version, low_cpu_mem_usage=True, seg_token_idx=args.seg_token_idx, **kwargs
     )
 
-    if os.path.exists(args.version):
-        model_dir = args.version
-    else: # hack for cached pre-trained weights
-        user_name, model_name = args.version.split("/")
-        cache_dir = "{}/.cache/huggingface/hub/models--{}--{}".format(os.environ['HOME'], user_name, model_name)
-        if os.path.exists(cache_dir):
-            model1_dir = glob.glob("{}/snapshots/*/pytorch_model-visual_model.bin".format(cache_dir))
-            model2_dir = glob.glob("{}/snapshots/*/pytorch_model-text_hidden_fcs.bin".format(cache_dir))
-            if len(model1_dir) == 0 or len(model2_dir) == 0:
-                raise ValueError("Pre-trained weights for visual_model or text_hidden_fcs do not exist in {}.".format(
-                    cache_dir
-                ))
-            model1_dir = ["/".join(x.split("/")[:-1]) for x in model1_dir]
-            model2_dir = ["/".join(x.split("/")[:-1]) for x in model2_dir]
-            model_dir = list(set(model1_dir).intersection(set(model2_dir)))
-            if len(model_dir) == 0:
-                raise ValueError("Pre-trained weights for visual_model or text_hidden_fcs do not exist in {}.".format(
-                    cache_dir
-                ))
-            model_dir = model_dir[0]
-        else:
-            raise ValueError("The path {} does not exists.".format(cache_dir))
+    model.config.eos_token_id = tokenizer.eos_token_id
+    model.config.bos_token_id = tokenizer.bos_token_id
+    model.config.pad_token_id = tokenizer.pad_token_id
 
-    weight = {}
-    visual_model_weight = torch.load(
-        os.path.join(model_dir, "pytorch_model-visual_model.bin")
-    )
-    text_hidden_fcs_weight = torch.load(
-        os.path.join(model_dir, "pytorch_model-text_hidden_fcs.bin")
-    )
-    weight.update(visual_model_weight)
-    weight.update(text_hidden_fcs_weight)
-    missing_keys, unexpected_keys = model.load_state_dict(weight, strict=False)
+    model.get_model().initialize_vision_modules(model.get_model().config)
+    vision_tower = model.get_model().get_vision_tower()
+    vision_tower.to(dtype=torch_dtype)
 
     if args.precision == "bf16":
         model = model.bfloat16().cuda()
-    elif args.precision == "fp16":
+    elif (
+        args.precision == "fp16" and (not args.load_in_4bit) and (not args.load_in_8bit)
+    ):
+        vision_tower = model.get_model().get_vision_tower()
+        model.model.vision_tower = None
         import deepspeed
 
         model_engine = deepspeed.init_inference(
@@ -129,27 +141,29 @@ def main(args):
             replace_method="auto",
         )
         model = model_engine.module
-    else:
+        model.model.vision_tower = vision_tower.half().cuda()
+    elif args.precision == "fp32":
         model = model.float().cuda()
 
-    DEFAULT_IMAGE_TOKEN = "<image>"
-    DEFAULT_IMAGE_PATCH_TOKEN = "<im_patch>"
-    DEFAULT_IM_START_TOKEN = "<im_start>"
-    DEFAULT_IM_END_TOKEN = "<im_end>"
-    image_token_len = 256
+    vision_tower = model.get_model().get_vision_tower()
+    vision_tower.to(device=args.local_rank)
 
-    clip_image_processor = CLIPImageProcessor.from_pretrained(args.vision_tower)
+    clip_image_processor = CLIPImageProcessor.from_pretrained(model.config.vision_tower)
     transform = ResizeLongestSide(args.image_size)
 
+    model.eval()
+
     while True:
-        conv = get_default_conv_template("vicuna").copy()
+        conv = conversation_lib.conv_templates[args.conv_type].copy()
         conv.messages = []
 
         prompt = input("Please input your prompt: ")
-        prompt = DEFAULT_IMAGE_TOKEN + " " + prompt
-        replace_token = DEFAULT_IMAGE_PATCH_TOKEN * image_token_len
-        replace_token = DEFAULT_IM_START_TOKEN + replace_token + DEFAULT_IM_END_TOKEN
-        prompt = prompt.replace(DEFAULT_IMAGE_TOKEN, replace_token)
+        prompt = DEFAULT_IMAGE_TOKEN + "\n" + prompt
+        if args.use_mm_start_end:
+            replace_token = (
+                DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN
+            )
+            prompt = prompt.replace(DEFAULT_IMAGE_TOKEN, replace_token)
 
         conv.append_message(conv.roles[0], prompt)
         conv.append_message(conv.roles[1], "")
@@ -160,79 +174,56 @@ def main(args):
             print("File not found in {}".format(image_path))
             continue
 
-        image = cv2.imread(image_path)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        original_size_list = [image.shape[:2]]
-        if args.precision == "bf16":
-            images_clip = (
-                clip_image_processor.preprocess(image, return_tensors="pt")[
-                    "pixel_values"
-                ][0]
-                .unsqueeze(0)
-                .cuda()
-                .bfloat16()
-            )
-        elif args.precision == "fp16":
-            images_clip = (
-                clip_image_processor.preprocess(image, return_tensors="pt")[
-                    "pixel_values"
-                ][0]
-                .unsqueeze(0)
-                .cuda()
-                .half()
-            )
-        else:
-            images_clip = (
-                clip_image_processor.preprocess(image, return_tensors="pt")[
-                    "pixel_values"
-                ][0]
-                .unsqueeze(0)
-                .cuda()
-                .float()
-            )
-        images = transform.apply_image(image)
-        resize_list = [images.shape[:2]]
-        if args.precision == "bf16":
-            images = (
-                preprocess(torch.from_numpy(images).permute(2, 0, 1).contiguous())
-                .unsqueeze(0)
-                .cuda()
-                .bfloat16()
-            )
-        elif args.precision == "fp16":
-            images = (
-                preprocess(torch.from_numpy(images).permute(2, 0, 1).contiguous())
-                .unsqueeze(0)
-                .cuda()
-                .half()
-            )
-        else:
-            images = (
-                preprocess(torch.from_numpy(images).permute(2, 0, 1).contiguous())
-                .unsqueeze(0)
-                .cuda()
-                .float()
-            )
+        image_np = cv2.imread(image_path)
+        image_np = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)
+        original_size_list = [image_np.shape[:2]]
 
-        input_ids = tokenizer(prompt).input_ids
-        input_ids = torch.LongTensor(input_ids).unsqueeze(0).cuda()
+        image_clip = (
+            clip_image_processor.preprocess(image_np, return_tensors="pt")[
+                "pixel_values"
+            ][0]
+            .unsqueeze(0)
+            .cuda()
+        )
+        if args.precision == "bf16":
+            image_clip = image_clip.bfloat16()
+        elif args.precision == "fp16":
+            image_clip = image_clip.half()
+        else:
+            image_clip = image_clip.float()
+
+        image = transform.apply_image(image_np)
+        resize_list = [image.shape[:2]]
+
+        image = (
+            preprocess(torch.from_numpy(image).permute(2, 0, 1).contiguous())
+            .unsqueeze(0)
+            .cuda()
+        )
+        if args.precision == "bf16":
+            image = image.bfloat16()
+        elif args.precision == "fp16":
+            image = image.half()
+        else:
+            image = image.float()
+
+        input_ids = tokenizer_image_token(prompt, tokenizer, return_tensors="pt")
+        input_ids = input_ids.unsqueeze(0).cuda()
+
         output_ids, pred_masks = model.evaluate(
-            images_clip,
-            images,
+            image_clip,
+            image,
             input_ids,
             resize_list,
             original_size_list,
             max_new_tokens=512,
             tokenizer=tokenizer,
         )
-        text_output = tokenizer.decode(output_ids[0], skip_special_tokens=False)
-        text_output = (
-            text_output.replace(DEFAULT_IMAGE_PATCH_TOKEN, "")
-            .replace("\n", "")
-            .replace("  ", "")
-        )
+        output_ids = output_ids[0][output_ids[0] != IMAGE_TOKEN_INDEX]
 
-        print("text_output: ", text_output)
+        text_output = tokenizer.decode(output_ids, skip_special_tokens=False)
+        text_output = text_output.replace("\n", "").replace("  ", " ")
+
         for i, pred_mask in enumerate(pred_masks):
             if pred_mask.shape[0] == 0:
                 continue
@@ -249,9 +240,9 @@ def main(args):
             save_path = "{}/{}_masked_img_{}.jpg".format(
                 args.vis_save_path, image_path.split("/")[-1].split(".")[0], i
             )
-            save_img = image.copy()
+            save_img = image_np.copy()
             save_img[pred_mask] = (
-                image * 0.5
+                image_np * 0.5
                 + pred_mask[:, :, None].astype(np.uint8) * np.array([255, 0, 0]) * 0.5
             )[pred_mask]
             save_img = cv2.cvtColor(save_img, cv2.COLOR_RGB2BGR)

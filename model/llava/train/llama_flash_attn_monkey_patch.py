@@ -1,20 +1,29 @@
-# Adopted from https://github.com/lm-sys/FastChat. Below is the original copyright:
+import logging
 from typing import List, Optional, Tuple
 
 import torch
 import transformers
 from einops import rearrange
-from flash_attn.bert_padding import pad_input, unpad_input
-from flash_attn.flash_attn_interface import flash_attn_unpadded_qkvpacked_func
 from torch import nn
 from transformers.models.llama.modeling_llama import apply_rotary_pos_emb
+
+try:
+    from flash_attn.flash_attn_interface import \
+        flash_attn_unpadded_qkvpacked_func
+except ImportError:
+    from flash_attn.flash_attn_interface import (
+        flash_attn_varlen_qkvpacked_func as flash_attn_unpadded_qkvpacked_func,
+    )
+
+from flash_attn.bert_padding import pad_input, unpad_input
 
 
 def forward(
     self,
     hidden_states: torch.Tensor,
-    past_key_value: Optional[Tuple[torch.Tensor]] = None,
     attention_mask: Optional[torch.Tensor] = None,
+    position_ids: Optional[torch.Tensor] = None,
+    past_key_value: Optional[Tuple[torch.Tensor]] = None,
     output_attentions: bool = False,
     use_cache: bool = False,
 ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
@@ -43,18 +52,15 @@ def forward(
     # [bsz, nh, q_len, hd]
 
     kv_seq_len = key_states.shape[-2]
-    offset = 0
-    if past_key_value is not None:
-        offset = past_key_value[0].shape[-2]
-        kv_seq_len += offset
+    assert past_key_value is None, "past_key_value is not supported"
+
     cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
     query_states, key_states = apply_rotary_pos_emb(
-        query_states, key_states, cos, sin, offset=offset
+        query_states, key_states, cos, sin, position_ids
     )
     # [bsz, nh, t, hd]
     assert not output_attentions, "output_attentions is not supported"
     assert not use_cache, "use_cache is not supported"
-    assert past_key_value is None, "past_key_value is not supported"
 
     # Flash attention codes from
     # https://github.com/HazyResearch/flash-attention/blob/main/flash_attn/flash_attention.py
@@ -108,6 +114,12 @@ def _prepare_decoder_attention_mask(
 
 
 def replace_llama_attn_with_flash_attn():
+    cuda_major, cuda_minor = torch.cuda.get_device_capability()
+    if cuda_major < 8:
+        logging.warning(
+            "Flash attention is only supported on A100 or H100 GPU during training due to head dim > 64 backward."
+            "ref: https://github.com/HazyResearch/flash-attention/issues/190#issuecomment-1523359593"
+        )
     transformers.models.llama.modeling_llama.LlamaModel._prepare_decoder_attention_mask = (
         _prepare_decoder_attention_mask
     )

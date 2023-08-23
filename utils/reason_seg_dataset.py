@@ -9,20 +9,13 @@ import torch
 import torch.nn.functional as F
 from transformers import CLIPImageProcessor
 
+from model.llava import conversation as conversation_lib
 from model.segment_anything.utils.transforms import ResizeLongestSide
 
-from .conversation import get_default_conv_template
 from .data_processing import get_mask_from_json
-from .utils import (
-    ANSWER_LIST,
-    DEFAULT_IM_END_TOKEN,
-    DEFAULT_IM_START_TOKEN,
-    DEFAULT_IMAGE_PATCH_TOKEN,
-    DEFAULT_IMAGE_TOKEN,
-    EXPLANATORY_QUESTION_LIST,
-    LONG_QUESTION_LIST,
-    SHORT_QUESTION_LIST,
-)
+from .utils import (ANSWER_LIST, DEFAULT_IMAGE_TOKEN,
+                    EXPLANATORY_QUESTION_LIST, LONG_QUESTION_LIST,
+                    SHORT_QUESTION_LIST)
 
 
 class ReasonSegDataset(torch.utils.data.Dataset):
@@ -119,20 +112,15 @@ class ReasonSegDataset(torch.utils.data.Dataset):
         image_path = images[idx]
         json_path = jsons[idx]
 
-        img = cv2.imread(image_path)
-        images = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        ori_size = images.shape[:2]
-        # preprocess images for clip
-        images_clip = self.clip_image_processor.preprocess(images, return_tensors="pt")[
+        image = cv2.imread(image_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        ori_size = image.shape[:2]
+        # preprocess image for clip
+        image_clip = self.clip_image_processor.preprocess(image, return_tensors="pt")[
             "pixel_values"
         ][0]
-        image_token_len = (images_clip.shape[1] // 14) * (
-            images_clip.shape[2] // 14
-        )  # FIXME: 14 is hardcoded patch size
-        images = self.transform.apply_image(images)  # preprocess images for sam
-        resize = images.shape[:2]
 
-        mask, sents, is_sentence = get_mask_from_json(json_path, img)
+        mask, sents, is_sentence = get_mask_from_json(json_path, image)
         if len(sents) >= self.num_classes_per_sample:
             sampled_inds = np.random.choice(
                 list(range(len(sents))), size=self.num_classes_per_sample, replace=False
@@ -143,6 +131,9 @@ class ReasonSegDataset(torch.utils.data.Dataset):
         sampled_masks = [
             (mask == 1).astype(np.float32) for _ in range(len(sampled_inds))
         ]
+
+        image = self.transform.apply_image(image)  # preprocess image for sam
+        resize = image.shape[:2]
 
         image_name = image_path.split("/")[-1]
         if self.explanatory != -1 and image_name in self.img_to_explanation:
@@ -161,9 +152,9 @@ class ReasonSegDataset(torch.utils.data.Dataset):
                 question_template = random.choice(self.short_question_list)
                 questions.append(question_template.format(class_name=text.lower()))
 
+            # add explanation if applicable
             img_name = image_path.split("/")[-1]
             if self.explanatory != -1 and img_name in self.img_to_explanation:
-                # choice = random.randint(0, 2)
                 if choice == 0:  # [SEG] token
                     answers.append(random.choice(self.answer_list))
                 elif choice == 1:  # [SEG] token + text answer
@@ -172,7 +163,7 @@ class ReasonSegDataset(torch.utils.data.Dataset):
                     answer = random.choice(self.answer_list) + " {}".format(answer)
                     questions[-1] = (
                         DEFAULT_IMAGE_TOKEN
-                        + " "
+                        + "\n"
                         + text
                         + " {}".format(random.choice(self.explanatory_question_list))
                     )
@@ -180,7 +171,7 @@ class ReasonSegDataset(torch.utils.data.Dataset):
                 elif choice == 2:  # vanilla text answer
                     image_name = image_path.split("/")[-1]
                     answer = self.img_to_explanation[image_name]["outputs"]
-                    questions[-1] = DEFAULT_IMAGE_TOKEN + " " + text
+                    questions[-1] = DEFAULT_IMAGE_TOKEN + "\n" + text
                     answers.append(answer)
                 else:
                     raise ValueError("Not implemented yet.")
@@ -188,7 +179,7 @@ class ReasonSegDataset(torch.utils.data.Dataset):
                 answers.append(random.choice(self.answer_list))
 
             conversations = []
-            conv = get_default_conv_template("vicuna").copy()
+            conv = conversation_lib.default_conversation.copy()
             roles = {"human": conv.roles[0], "gpt": conv.roles[1]}
 
             i = 0
@@ -199,17 +190,7 @@ class ReasonSegDataset(torch.utils.data.Dataset):
                 conversations.append(conv.get_prompt())
                 i += 1
 
-        # replace <image> token
-        for i in range(len(conversations)):
-            replace_token = DEFAULT_IMAGE_PATCH_TOKEN * image_token_len
-            replace_token = (
-                DEFAULT_IM_START_TOKEN + replace_token + DEFAULT_IM_END_TOKEN
-            )
-            conversations[i] = conversations[i].replace(
-                DEFAULT_IMAGE_TOKEN, replace_token
-            )
-
-        images = self.preprocess(torch.from_numpy(images).permute(2, 0, 1).contiguous())
+        image = self.preprocess(torch.from_numpy(image).permute(2, 0, 1).contiguous())
 
         image_name = image_path.split("/")[-1]
         if (
@@ -226,8 +207,8 @@ class ReasonSegDataset(torch.utils.data.Dataset):
 
         return (
             image_path,
-            images,
-            images_clip,
+            image,
+            image_clip,
             conversations,
             masks,
             label,

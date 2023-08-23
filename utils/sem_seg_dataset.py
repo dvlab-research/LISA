@@ -11,17 +11,10 @@ from PIL import Image
 from pycocotools.coco import COCO
 from transformers import CLIPImageProcessor
 
+from model.llava import conversation as conversation_lib
 from model.segment_anything.utils.transforms import ResizeLongestSide
 
-from .conversation import get_default_conv_template
-from .utils import (
-    ANSWER_LIST,
-    DEFAULT_IM_END_TOKEN,
-    DEFAULT_IM_START_TOKEN,
-    DEFAULT_IMAGE_PATCH_TOKEN,
-    DEFAULT_IMAGE_TOKEN,
-    SHORT_QUESTION_LIST,
-)
+from .utils import ANSWER_LIST, SHORT_QUESTION_LIST
 
 
 def init_mapillary(base_image_dir):
@@ -85,8 +78,7 @@ def init_cocostuff(base_image_dir):
         os.path.join(base_image_dir, "cocostuff", "train2017", "*.png")
     )
     cocostuff_images = [
-        x.replace(".png", ".jpg").replace("cocostuff", "coco")
-        for x in cocostuff_labels
+        x.replace(".png", ".jpg").replace("cocostuff", "coco") for x in cocostuff_labels
     ]
 
     print("cocostuff: ", len(cocostuff_images))
@@ -202,8 +194,8 @@ class SemSegDataset(torch.utils.data.Dataset):
             img_ids, coco_api = self.data2list[ds]
             idx = random.randint(0, len(img_ids) - 1)
             img_id = img_ids[idx]
-            image = coco_api.loadImgs([img_id])[0]
-            file_name = image["file_name"]
+            image_info = coco_api.loadImgs([img_id])[0]
+            file_name = image_info["file_name"]
             if ds == "pascal_part":
                 file_name = os.path.join(
                     "VOCdevkit", "VOC2010", "JPEGImages", file_name
@@ -211,20 +203,16 @@ class SemSegDataset(torch.utils.data.Dataset):
                 image_path = os.path.join(self.base_image_dir, "vlpart", ds, file_name)
             elif ds == "paco_lvis":
                 image_path = os.path.join(self.base_image_dir, "coco", file_name)
-            img = cv2.imread(image_path)
-            images = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            image = cv2.imread(image_path)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-            # preprocess images for clip
-            images_clip = self.clip_image_processor.preprocess(
-                images, return_tensors="pt"
+            # preprocess image for clip
+            image_clip = self.clip_image_processor.preprocess(
+                image, return_tensors="pt"
             )["pixel_values"][0]
-            image_token_len = (images_clip.shape[1] // 14) * (
-                images_clip.shape[2] // 14
-            )  # FIXME: 14 is hardcoded patch size
-
-            images = self.transform.apply_image(images)  # preprocess images for sam
-            resize = images.shape[:2]
-            annIds = coco_api.getAnnIds(imgIds=image["id"])
+            image = self.transform.apply_image(image)  # preprocess image for sam
+            resize = image.shape[:2]
+            annIds = coco_api.getAnnIds(imgIds=image_info["id"])
             anns = coco_api.loadAnns(annIds)
             if len(anns) == 0:
                 return self.__getitem__(0)
@@ -248,9 +236,9 @@ class SemSegDataset(torch.utils.data.Dataset):
                 sampled_classes.append(name)
 
         elif ds in ["ade20k", "cocostuff", "mapillary"]:
-            images, labels = self.data2list[ds]
-            idx = random.randint(0, len(images) - 1)
-            image_path = images[idx]
+            image, labels = self.data2list[ds]
+            idx = random.randint(0, len(image) - 1)
+            image_path = image[idx]
             label_path = labels[idx]
             label = Image.open(label_path)
             label = np.array(label)
@@ -263,16 +251,13 @@ class SemSegDataset(torch.utils.data.Dataset):
                     if "-" in c:
                         label[label == i] = 255
             img = cv2.imread(image_path)
-            images = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            # preprocess images for clip
-            images_clip = self.clip_image_processor.preprocess(
-                images, return_tensors="pt"
+            image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            # preprocess image for clip
+            image_clip = self.clip_image_processor.preprocess(
+                image, return_tensors="pt"
             )["pixel_values"][0]
-            image_token_len = (images_clip.shape[1] // 14) * (
-                images_clip.shape[2] // 14
-            )  # FIXME: 14 is hardcoded patch size
-            images = self.transform.apply_image(images)  # preprocess images for sam
-            resize = images.shape[:2]
+            image = self.transform.apply_image(image)  # preprocess image for sam
+            resize = image.shape[:2]
             unique_label = np.unique(label).tolist()
             if 255 in unique_label:
                 unique_label.remove(255)
@@ -306,8 +291,7 @@ class SemSegDataset(torch.utils.data.Dataset):
             class_ids.append(class_id)
 
         conversations = []
-        conv = get_default_conv_template("vicuna").copy()
-        roles = {"human": conv.roles[0], "gpt": conv.roles[1]}
+        conv = conversation_lib.default_conversation.copy()
 
         i = 0
         while i < len(questions):
@@ -317,17 +301,7 @@ class SemSegDataset(torch.utils.data.Dataset):
             conversations.append(conv.get_prompt())
             i += 1
 
-        # replace <image> token
-        for i in range(len(conversations)):
-            replace_token = DEFAULT_IMAGE_PATCH_TOKEN * image_token_len
-            replace_token = (
-                DEFAULT_IM_START_TOKEN + replace_token + DEFAULT_IM_END_TOKEN
-            )
-            conversations[i] = conversations[i].replace(
-                DEFAULT_IMAGE_TOKEN, replace_token
-            )
-
-        images = self.preprocess(torch.from_numpy(images).permute(2, 0, 1).contiguous())
+        image = self.preprocess(torch.from_numpy(image).permute(2, 0, 1).contiguous())
 
         if ds in ["paco_lvis", "pascal_part"]:
             masks = []
@@ -350,8 +324,8 @@ class SemSegDataset(torch.utils.data.Dataset):
             masks = torch.stack(masks, dim=0)
         return (
             image_path,
-            images,
-            images_clip,
+            image,
+            image_clip,
             conversations,
             masks,
             label,

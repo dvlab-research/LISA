@@ -7,15 +7,25 @@ import torch
 import torch.nn.functional as F
 from transformers import CLIPImageProcessor
 
+from model.llava import conversation as conversation_lib
 from model.segment_anything.utils.transforms import ResizeLongestSide
 
-from .conversation import get_default_conv_template
-from .utils import (
-    DEFAULT_IM_END_TOKEN,
-    DEFAULT_IM_START_TOKEN,
-    DEFAULT_IMAGE_PATCH_TOKEN,
-    DEFAULT_IMAGE_TOKEN,
-)
+from .utils import DEFAULT_IMAGE_TOKEN
+
+
+def preprocess_multimodal(source, mm_use_im_start_end):
+    for sentence in source:
+        if DEFAULT_IMAGE_TOKEN in sentence["value"]:
+            sentence["value"] = (
+                sentence["value"].replace(DEFAULT_IMAGE_TOKEN, "").strip()
+            )
+            sentence["value"] = DEFAULT_IMAGE_TOKEN + "\n" + sentence["value"]
+            sentence["value"] = sentence["value"].strip()
+            if "mmtag" in conversation_lib.default_conversation.version:
+                sentence["value"] = sentence["value"].replace(
+                    DEFAULT_IMAGE_TOKEN, "<Image>" + DEFAULT_IMAGE_TOKEN + "</Image>"
+                )
+    return source
 
 
 class VQADataset(torch.utils.data.Dataset):
@@ -74,24 +84,24 @@ class VQADataset(torch.utils.data.Dataset):
         idx = random.randint(0, len(self.vqa_data) - 1)
         item = self.vqa_data[idx]
         image_path = os.path.join(self.vqa_image_root, item["image"])
-        img = cv2.imread(image_path)
-        images = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        ori_size = images.shape[:2]
-        images_clip = self.clip_image_processor.preprocess(images, return_tensors="pt")[
+        image = cv2.imread(image_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        ori_size = image.shape[:2]
+        image_clip = self.clip_image_processor.preprocess(image, return_tensors="pt")[
             "pixel_values"
         ][
             0
-        ]  # preprocess images for clip
-        image_token_len = (images_clip.shape[1] // 14) * (
-            images_clip.shape[2] // 14
-        )  # FIXME: 14 is hardcoded patch size
+        ]  # preprocess image for clip
 
-        images = self.transform.apply_image(images)  # preprocess images for sam
-        resize = images.shape[:2]
+        image = self.transform.apply_image(image)  # preprocess image for sam
+        resize = image.shape[:2]
+
+        conv = conversation_lib.default_conversation.copy()
         source = item["conversations"]
-        conv = get_default_conv_template(
-            "vicuna"
-        ).copy()  # conversation_lib.default_conversation.copy()
+        source = preprocess_multimodal(
+            source,
+            mm_use_im_start_end=conv.sep_style == conversation_lib.SeparatorStyle.TWO,
+        )
         roles = {"human": conv.roles[0], "gpt": conv.roles[1]}
         conversations = []
         if roles[source[0]["from"]] != conv.roles[0]:
@@ -107,25 +117,15 @@ class VQADataset(torch.utils.data.Dataset):
         questions = conversations
         sampled_classes = conversations
 
-        # replace <image> token
-        for i in range(len(conversations)):
-            replace_token = DEFAULT_IMAGE_PATCH_TOKEN * image_token_len
-            replace_token = (
-                DEFAULT_IM_START_TOKEN + replace_token + DEFAULT_IM_END_TOKEN
-            )
-            conversations[i] = conversations[i].replace(
-                DEFAULT_IMAGE_TOKEN, replace_token
-            )
-
-        images = self.preprocess(torch.from_numpy(images).permute(2, 0, 1).contiguous())
+        image = self.preprocess(torch.from_numpy(image).permute(2, 0, 1).contiguous())
 
         masks = torch.rand(0, *ori_size)
         label = torch.ones(ori_size) * self.ignore_label
 
         return (
             image_path,
-            images,
-            images_clip,
+            image,
+            image_clip,
             conversations,
             masks,
             label,

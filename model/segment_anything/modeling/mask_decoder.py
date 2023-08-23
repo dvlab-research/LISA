@@ -129,8 +129,6 @@ class MaskDecoder(nn.Module):
             sparse_prompt_embeddings.size(0), -1, -1
         )
 
-        # sparse_prompt_embeddings = sparse_prompt_embeddings.half()
-
         tokens = torch.cat((output_tokens, sparse_prompt_embeddings), dim=1)
 
         # image_embeddings: [1, C, H, W], tokens: [B, N, C]

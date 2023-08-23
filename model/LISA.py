@@ -3,16 +3,13 @@ from typing import List
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from peft import LoraConfig, get_peft_model
 from transformers import BitsAndBytesConfig, CLIPVisionModel
 
-from utils.utils import (
-    DEFAULT_IM_END_TOKEN,
-    DEFAULT_IM_START_TOKEN,
-    DEFAULT_IMAGE_PATCH_TOKEN,
-)
+from utils.utils import (DEFAULT_IM_END_TOKEN, DEFAULT_IM_START_TOKEN,
+                         DEFAULT_IMAGE_PATCH_TOKEN)
 
-from .llava.model.llava import LlavaLlamaForCausalLM
+from .llava.model.language_model.llava_llama import (LlavaLlamaForCausalLM,
+                                                     LlavaLlamaModel)
 from .segment_anything import build_sam_vit_h
 
 
@@ -62,183 +59,36 @@ def sigmoid_ce_loss(
     return loss
 
 
-class LISA(nn.Module):
+class LisaMetaModel:
     def __init__(
         self,
-        local_rank,
-        seg_token_idx,
-        tokenizer,
-        llm_version,
-        lora_r,
-        precision,
-        load_in_4bit=False,
-        load_in_8bit=False,
-        lora_target_modules=["q_proj", "v_proj"],
-        lora_alpha=16,
-        lora_dropout=0.05,
-        vision_tower="openai/clip-vit-large-patch14",
-        mm_vision_select_layer=-2,
-        freeze_lm=True,
-        train_mask_decoder=True,
-        out_dim=256,
-        ce_loss_weight=1.0,
-        dice_loss_weight=0.5,
-        bce_loss_weight=2.0,
-        vision_pretrained=None,
+        config,
+        **kwargs,
     ):
-        super().__init__()
-        self.local_rank = local_rank
-        self.tokenizer = tokenizer
-        self.image_token = tokenizer.cls_token_id
-        self.precision = precision
-        self.ce_loss_weight = ce_loss_weight
-        self.dice_loss_weight = dice_loss_weight
-        self.bce_loss_weight = bce_loss_weight
+        super(LisaMetaModel, self).__init__(config)
 
-        # LLaVA
-        tokenizer.add_tokens([DEFAULT_IMAGE_PATCH_TOKEN], special_tokens=True)
-        num_new_tokens = tokenizer.add_tokens(
-            [DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN], special_tokens=True
-        )
-        if precision == "bf16":
-            self.lm = LlavaLlamaForCausalLM.from_pretrained(
-                llm_version,
-                torch_dtype=torch.bfloat16,
-                cache_dir=None,
-                low_cpu_mem_usage=True,
-            )
-        elif precision == "fp16":
-            if load_in_4bit:
-                self.lm = LlavaLlamaForCausalLM.from_pretrained(
-                    llm_version,
-                    load_in_4bit=True,
-                    cache_dir=None,
-                    low_cpu_mem_usage=True,
-                    device_map="auto",
-                    quantization_config=BitsAndBytesConfig(
-                        load_in_4bit=True,
-                        bnb_4bit_compute_dtype=torch.float16,
-                        bnb_4bit_use_double_quant=True,
-                        bnb_4bit_quant_type="nf4",
-                    ),
-                )
-            elif load_in_8bit:
-                self.lm = LlavaLlamaForCausalLM.from_pretrained(
-                    llm_version,
-                    load_in_8bit=True,
-                    cache_dir=None,
-                    low_cpu_mem_usage=True,
-                    device_map="auto",
-                )
-            else:
-                self.lm = LlavaLlamaForCausalLM.from_pretrained(
-                    llm_version,
-                    torch_dtype=torch.half,
-                    cache_dir=None,
-                    low_cpu_mem_usage=True,
-                )
+        self.config = config
+        if not hasattr(self.config, "train_mask_decoder"):
+            self.config.train_mask_decoder = kwargs["train_mask_decoder"]
+            self.config.out_dim = kwargs["out_dim"]
+            self.vision_pretrained = kwargs.get("vision_pretrained", None)
         else:
-            self.lm = LlavaLlamaForCausalLM.from_pretrained(
-                llm_version,
-                torch_dtype=torch.float32,
-                cache_dir=None,
-                low_cpu_mem_usage=True,
-            )
+            self.vision_pretrained = kwargs.get("vision_pretrained", None)
+            self.initialize_lisa_modules(self.config)
 
-        self.lm.enable_input_require_grads()
-        self.lm.gradient_checkpointing_enable()
-        self.lm.config.use_cache = False
-        model_vision_dict = self.lm.get_model().initialize_vision_modules(
-            vision_tower=vision_tower,
-            mm_vision_select_layer=mm_vision_select_layer,
-            precision=precision,
-        )
-        vision_config = model_vision_dict["vision_config"]
-        vision_tower = self.lm.get_model().vision_tower[0]
-        self.lm.model.config.eos_token_id = tokenizer.eos_token_id
-        self.lm.model.config.bos_token_id = tokenizer.bos_token_id
-        self.lm.model.config.pad_token_id = tokenizer.pad_token_id
-
-        if vision_tower.device.type == "meta":
-            if precision == "bf16":
-                vision_tower = CLIPVisionModel.from_pretrained(
-                    vision_tower.config._name_or_path,
-                    torch_dtype=torch.bfloat16,
-                    low_cpu_mem_usage=True,
-                ).cuda(local_rank)
-            elif precision == "fp16":
-                vision_tower = CLIPVisionModel.from_pretrained(
-                    vision_tower.config._name_or_path,
-                    torch_dtype=torch.half,
-                    low_cpu_mem_usage=True,
-                ).cuda(local_rank)
-            else:
-                vision_tower = CLIPVisionModel.from_pretrained(
-                    vision_tower.config._name_or_path,
-                    torch_dtype=torch.float32,
-                    low_cpu_mem_usage=True,
-                ).cuda(local_rank)
-            self.lm.get_model().vision_tower[0] = vision_tower
-        else:
-            if precision == "bf16":
-                vision_tower.to(device="cuda", dtype=torch.bfloat16)
-            elif precision == "fp16":
-                vision_tower.to(device="cuda", dtype=torch.half)
-            else:
-                vision_tower.to(device="cuda", dtype=torch.float32)
-
-        self.lm.config.tune_mm_mlp_adapter = False
-        self.lm.config.freeze_mm_mlp_adapter = False
-        self.lm.config.mm_use_im_start_end = True
-        vision_config.use_im_start_end = True
-        self.lm.config.sep_image_conv_front = False
-
-        self.lm.initialize_vision_tokenizer(
-            mm_use_im_start_end=True,
-            tokenizer=tokenizer,
-            num_new_tokens=num_new_tokens,
-            device=local_rank,
-            tune_mm_mlp_adapter=False,
-        )
-        if freeze_lm:
-            for n, param in self.lm.named_parameters():
-                param.requires_grad = False
-
-        # LoRA
-        if lora_r > 0:
-            config = LoraConfig(
-                r=lora_r,
-                lora_alpha=lora_alpha,
-                target_modules=lora_target_modules,
-                lora_dropout=lora_dropout,
-                bias="none",
-                task_type="CAUSAL_LM",
-            )
-            self.lm = get_peft_model(self.lm, config)
-            self.lm.print_trainable_parameters()
-
-        self.llm_version = llm_version
-
-        self.seg_token_idx = seg_token_idx
-        self.lm.resize_token_embeddings(len(tokenizer))
-
-        for n, p in self.lm.named_parameters():
-            if any([x in n for x in ["lm_head", "embed_tokens"]]) and p.shape[0] == len(
-                tokenizer
-            ):
-                p.requires_grad = True
-
+    def initialize_lisa_modules(self, config):
         # SAM
-        self.visual_model = build_sam_vit_h(vision_pretrained)
+        self.visual_model = build_sam_vit_h(self.vision_pretrained)
         for param in self.visual_model.parameters():
             param.requires_grad = False
-        if train_mask_decoder:
+        if config.train_mask_decoder:
             self.visual_model.mask_decoder.train()
             for param in self.visual_model.mask_decoder.parameters():
                 param.requires_grad = True
 
         # Projection layer
-        in_dim = self.lm.config.hidden_size
+        in_dim = config.hidden_size
+        out_dim = config.out_dim
         text_fc = [
             nn.Linear(in_dim, in_dim),
             nn.ReLU(inplace=True),
@@ -246,13 +96,75 @@ class LISA(nn.Module):
             nn.Dropout(0.0),
         ]
         self.text_hidden_fcs = nn.ModuleList([nn.Sequential(*text_fc)])
+        self.text_hidden_fcs.train()
+        for param in self.text_hidden_fcs.parameters():
+            param.requires_grad = True
+
+
+class LisaModel(LisaMetaModel, LlavaLlamaModel):
+    def __init__(
+        self,
+        config,
+        **kwargs,
+    ):
+        super(LisaModel, self).__init__(config, **kwargs)
+
+        self.config.use_cache = False
+        self.config.vision_tower = self.config.mm_vision_tower
+        self.config.mm_vision_select_feature = "patch"
+        self.config.image_aspect_ratio = "square"
+        self.config.image_grid_pinpoints = None
+        self.config.tune_mm_mlp_adapter = False
+        self.config.freeze_mm_mlp_adapter = True
+        self.config.pretrain_mm_mlp_adapter = None
+        self.config.mm_use_im_patch_token = False
+
+
+class LISAForCausalLM(LlavaLlamaForCausalLM):
+    def __init__(
+        self,
+        config,
+        **kwargs,
+    ):
+        if not hasattr(config, "train_mask_decoder"):
+            config.mm_use_im_start_end = kwargs.pop("use_mm_start_end", True)
+            config.mm_vision_tower = kwargs.get(
+                "vision_tower", "openai/clip-vit-large-patch14"
+            )
+            self.ce_loss_weight = kwargs.pop("ce_loss_weight", None)
+            self.dice_loss_weight = kwargs.pop("dice_loss_weight", None)
+            self.bce_loss_weight = kwargs.pop("bce_loss_weight", None)
+
+        self.seg_token_idx = kwargs.pop("seg_token_idx")
+
+        super().__init__(config)
+
+        self.model = LisaModel(config, **kwargs)
+
+        self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+
+        # Initialize weights and apply final processing
+        self.post_init()
 
     def get_visual_embs(self, pixel_values: torch.FloatTensor):
         with torch.no_grad():
-            image_embeddings = self.visual_model.image_encoder(pixel_values)
+            image_embeddings_list = []
+            for i in range(pixel_values.shape[0]):
+                torch.cuda.empty_cache()
+                image_embeddings = self.model.visual_model.image_encoder(
+                    pixel_values[i].unsqueeze(0)
+                )
+                image_embeddings_list.append(image_embeddings)
+            torch.cuda.empty_cache()
+            image_embeddings = torch.cat(image_embeddings_list, 0)
         return image_embeddings
 
-    def forward(
+    def forward(self, **kwargs):
+        if "past_key_values" in kwargs:
+            return super().forward(**kwargs)
+        return self.model_forward(**kwargs)
+
+    def model_forward(
         self,
         images: torch.FloatTensor,
         images_clip: torch.FloatTensor,
@@ -274,8 +186,13 @@ class LISA(nn.Module):
         seg_token_mask = torch.cat(
             [
                 seg_token_mask,
-                torch.zeros((seg_token_mask.shape[0], 1)).bool().cuda(self.local_rank),
+                torch.zeros((seg_token_mask.shape[0], 1)).bool().cuda(),
             ],
+            dim=1,
+        )
+        # hack for IMAGE_TOKEN_INDEX (we suppose that there is only one image, and it is in the front)
+        seg_token_mask = torch.cat(
+            [torch.zeros((seg_token_mask.shape[0], 255)).bool().cuda(), seg_token_mask],
             dim=1,
         )
 
@@ -288,7 +205,7 @@ class LISA(nn.Module):
             output_hidden_states = []
             for i in range(n_batch):
                 start_i, end_i = i * length, min((i + 1) * length, input_ids.shape[0])
-                output_i = self.lm(
+                output_i = super().forward(
                     images=images_clip_extend[: end_i - start_i],
                     attention_mask=attention_masks[start_i:end_i],
                     input_ids=input_ids[start_i:end_i],
@@ -316,7 +233,7 @@ class LISA(nn.Module):
                 images_clip_list.append(images_clip_i)
             images_clip = torch.cat(images_clip_list, dim=0)
 
-            output = self.lm(
+            output = super().forward(
                 images=images_clip,
                 attention_mask=attention_masks,
                 input_ids=input_ids,
@@ -327,11 +244,10 @@ class LISA(nn.Module):
 
         hidden_states = []
 
-        assert len(self.text_hidden_fcs) == 1
-        hidden_states.append(self.text_hidden_fcs[0](output_hidden_states[-1]))
+        assert len(self.model.text_hidden_fcs) == 1
+        hidden_states.append(self.model.text_hidden_fcs[0](output_hidden_states[-1]))
 
         last_hidden_state = torch.stack(hidden_states, dim=-1).sum(dim=-1)
-
         pred_embeddings = last_hidden_state[seg_token_mask]
         seg_token_counts = seg_token_mask.int().sum(-1)  # [bs, ]
 
@@ -351,21 +267,24 @@ class LISA(nn.Module):
         multimask_output = False
         pred_masks = []
         for i in range(len(pred_embeddings)):
-            sparse_embeddings, dense_embeddings = self.visual_model.prompt_encoder(
+            (
+                sparse_embeddings,
+                dense_embeddings,
+            ) = self.model.visual_model.prompt_encoder(
                 points=None,
                 boxes=None,
                 masks=None,
                 text_embeds=pred_embeddings[i].unsqueeze(1),
             )
             sparse_embeddings = sparse_embeddings.to(pred_embeddings[i].dtype)
-            low_res_masks, iou_predictions = self.visual_model.mask_decoder(
+            low_res_masks, iou_predictions = self.model.visual_model.mask_decoder(
                 image_embeddings=image_embeddings[i].unsqueeze(0),
-                image_pe=self.visual_model.prompt_encoder.get_dense_pe(),
+                image_pe=self.model.visual_model.prompt_encoder.get_dense_pe(),
                 sparse_prompt_embeddings=sparse_embeddings,
                 dense_prompt_embeddings=dense_embeddings,
                 multimask_output=multimask_output,
             )
-            pred_mask = self.visual_model.postprocess_masks(
+            pred_mask = self.model.visual_model.postprocess_masks(
                 low_res_masks,
                 input_size=resize_list[i],
                 original_size=label_list[i].shape,
@@ -433,7 +352,7 @@ class LISA(nn.Module):
         tokenizer=None,
     ):
         with torch.no_grad():
-            outputs = self.lm.generate(
+            outputs = self.generate(
                 images=images_clip,
                 input_ids=input_ids,
                 max_new_tokens=max_new_tokens,
@@ -445,11 +364,19 @@ class LISA(nn.Module):
             output_ids = outputs.sequences
 
             seg_token_mask = output_ids[:, 1:] == self.seg_token_idx
+            # hack for IMAGE_TOKEN_INDEX (we suppose that there is only one image, and it is in the front)
+            seg_token_mask = torch.cat(
+                [
+                    torch.zeros((seg_token_mask.shape[0], 255)).bool().cuda(),
+                    seg_token_mask,
+                ],
+                dim=1,
+            )
 
             hidden_states = []
 
-            assert len(self.text_hidden_fcs) == 1
-            hidden_states.append(self.text_hidden_fcs[0](output_hidden_states))
+            assert len(self.model.text_hidden_fcs) == 1
+            hidden_states.append(self.model.text_hidden_fcs[0](output_hidden_states))
 
             last_hidden_state = torch.stack(hidden_states, dim=-1).sum(dim=-1)
             pred_embeddings = last_hidden_state[seg_token_mask]
@@ -471,7 +398,10 @@ class LISA(nn.Module):
             multimask_output = False
             pred_masks = []
             for i in range(len(pred_embeddings)):
-                sparse_embeddings, dense_embeddings = self.visual_model.prompt_encoder(
+                (
+                    sparse_embeddings,
+                    dense_embeddings,
+                ) = self.model.visual_model.prompt_encoder(
                     points=None,
                     boxes=None,
                     masks=None,
@@ -479,15 +409,14 @@ class LISA(nn.Module):
                 )
 
                 sparse_embeddings = sparse_embeddings.to(pred_embeddings[i].dtype)
-                low_res_masks, iou_predictions = self.visual_model.mask_decoder(
+                low_res_masks, iou_predictions = self.model.visual_model.mask_decoder(
                     image_embeddings=image_embeddings[i].unsqueeze(0),
-                    image_pe=self.visual_model.prompt_encoder.get_dense_pe(),
+                    image_pe=self.model.visual_model.prompt_encoder.get_dense_pe(),
                     sparse_prompt_embeddings=sparse_embeddings,
                     dense_prompt_embeddings=dense_embeddings,
                     multimask_output=multimask_output,
                 )
-
-                pred_mask = self.visual_model.postprocess_masks(
+                pred_mask = self.model.visual_model.postprocess_masks(
                     low_res_masks,
                     input_size=resize_list[i],
                     original_size=original_size_list[i],
