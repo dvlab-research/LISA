@@ -236,7 +236,7 @@ def inference(input_str, input_image):
     conv.append_message(conv.roles[1], "")
     prompt = conv.get_prompt()
 
-    image_np = cv2.imread(image_path)
+    image_np = cv2.imread(input_image)
     image_np = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)
     original_size_list = [image_np.shape[:2]]
 
@@ -255,7 +255,7 @@ def inference(input_str, input_image):
         image_clip = image_clip.float()
 
     image = transform.apply_image(image_np)
-    resize_list = [images.shape[:2]]
+    resize_list = [image.shape[:2]]
 
     image = (
         preprocess(torch.from_numpy(image).permute(2, 0, 1).contiguous())
