@@ -223,6 +223,8 @@ deepspeed --master_port=24999 train_ds.py \
   --eval_only
 ```
 
+Note: the v1 model is trained using both `train+val` sets, so please use the `v0` model to reproduce the validation results. (To use the v0 models, please first checkout to the legacy version repo git checkout 0e26916.)
+
  
 ## Inference 
 
