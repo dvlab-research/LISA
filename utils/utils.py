@@ -30,7 +30,7 @@ LONG_QUESTION_LIST = [
 EXPLANATORY_QUESTION_LIST = [
     "Please output segmentation mask and explain why.",
     "Please output segmentation mask and explain the reason.",
-    "Please output segmentation mask and give some explaination.",
+    "Please output segmentation mask and give some explanation.",
 ]
 
 ANSWER_LIST = [
