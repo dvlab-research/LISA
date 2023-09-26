@@ -90,7 +90,6 @@ def main(args):
         kwargs.update(
             {
                 "torch_dtype": torch.half,
-                "device_map": "auto",
                 "load_in_4bit": True,
                 "quantization_config": BitsAndBytesConfig(
                     load_in_4bit=True,
@@ -105,7 +104,6 @@ def main(args):
         kwargs.update(
             {
                 "torch_dtype": torch.half,
-                "device_map": "auto",
                 "quantization_config": BitsAndBytesConfig(
                     llm_int8_skip_modules=["visual_model"],
                     load_in_8bit=True,
@@ -114,7 +112,7 @@ def main(args):
         )
 
     model = LISAForCausalLM.from_pretrained(
-        args.version, low_cpu_mem_usage=True, seg_token_idx=args.seg_token_idx, **kwargs
+        args.version, low_cpu_mem_usage=True, vision_tower=args.vision_tower, seg_token_idx=args.seg_token_idx, **kwargs
     )
 
     model.config.eos_token_id = tokenizer.eos_token_id
@@ -223,6 +221,7 @@ def main(args):
 
         text_output = tokenizer.decode(output_ids, skip_special_tokens=False)
         text_output = text_output.replace("\n", "").replace("  ", " ")
+        print("text_output: ", text_output)
 
         for i, pred_mask in enumerate(pred_masks):
             if pred_mask.shape[0] == 0:
