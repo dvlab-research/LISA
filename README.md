@@ -215,11 +215,10 @@ CUDA_VISIBLE_DEVICES="" python3 merge_lora_weights_and_save_hf_model.py \
 ### Validation
 ```
 deepspeed --master_port=24999 train_ds.py \
-  --version="PATH_TO_LLaVA" \
+  --version="PATH_TO_LISA_Model_Directory" \
   --dataset_dir='./dataset' \
   --vision_pretrained="PATH_TO_SAM" \
   --exp_name="lisa-7b" \
-  --weight='PATH_TO_pytorch_model.bin' \
   --eval_only
 ```
 
