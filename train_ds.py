@@ -573,7 +573,7 @@ def validate(val_loader, model_engine, epoch, writer, args):
 
     if args.local_rank == 0:
         writer.add_scalar("val/giou", giou, epoch)
-        writer.add_scalar("val/giou", ciou, epoch)
+        writer.add_scalar("val/ciou", ciou, epoch)
         print("giou: {:.4f}, ciou: {:.4f}".format(giou, ciou))
 
     return giou, ciou
