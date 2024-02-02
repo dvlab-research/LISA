@@ -301,7 +301,7 @@ If you find this project useful in your research, please consider citing:
   year={2023}
 }
 @article{yang2023improved,
-  title={An Improved Baseline for Reasoning Segmentation with Large Language Model},
+  title={LISA++: An Improved Baseline for Reasoning Segmentation with Large Language Model},
   author={Yang, Senqiao and Qu, Tianyuan and Lai, Xin and Tian, Zhuotao and Peng, Bohao and Liu, Shu and Jia, Jiaya},
   journal={arXiv preprint arXiv:2312.17240},
   year={2023}
