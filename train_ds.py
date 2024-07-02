@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import shutil
 import sys
@@ -9,6 +10,15 @@ import deepspeed
 import numpy as np
 import torch
 import tqdm
+
+try:
+    from model.llava.train.llama_flash_attn_monkey_patch import \
+        replace_llama_attn_with_flash_attn
+
+    replace_llama_attn_with_flash_attn()
+except:
+    logging.warning("Flash attention is not installed")
+
 import transformers
 from peft import LoraConfig, get_peft_model
 from torch.utils.tensorboard import SummaryWriter
